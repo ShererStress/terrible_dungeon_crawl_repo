@@ -26,6 +26,57 @@ button {
   outline: none;
 }
 
+
+
+section {
+
+}
+
+sectionCombat {
+
+}
+
+#commandZone{
+  background-color: blue;
+  width: 200px;
+}
+
+#playerCharacterZone {
+  height: 100%;
+  width: 250px;
+  background-color: green;
+  display: flex;
+  flex-direction: column;
+}
+
+#centerZone{
+  width: 300px;
+}
+
+#enemyZone {
+  background-color: red;
+  width: 250px;
+  display: flex;
+  flex-direction: column;
+}
+
+ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+li {
+  width: 100%;
+}
+
+.commandButton{
+  width: 100%;
+  font-size: 25px;
+  border-radius: 2px;
+}
+
+
 div {
 
 }
@@ -83,52 +134,30 @@ div {
   box-sizing: border-box;
 }
 
-section {
-
-}
-
-sectionCombat {
-
-}
-
-#commandZone{
-  background-color: blue;
-  width: 200px;
-}
-
-#playerCharacterZone {
-  height: 100%;
-  width: 250px;
-  background-color: green;
+.healthContainer {
+  background-color: black;
+  height: 20px;
+  width: 100px;
   display: flex;
-  flex-direction: column;
+  border-radius: 3px;
+  border: 1px solid #5e5542;
 }
 
-#centerZone{
-  width: 300px;
+bar {
+
 }
 
-#enemyZone {
+.woundBar {
   background-color: red;
-  width: 250px;
+  height: 20px;
+  /* width: 90%; */
   display: flex;
-  flex-direction: column;
 }
 
-ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-li {
-  width: 100%;
-}
-
-.commandButton{
-  width: 100%;
-  font-size: 25px;
-  border-radius: 2px;
+.fatigueBar {
+  background-color: green;
+  height: 20px;
+  /* width: 70%; */
 }
 
 
@@ -160,7 +189,11 @@ button {
   background: rgba(100, 100, 100, .6);
 }
 
-/* Gameplay rendering elements */
+
+
+
+
+/* Gameplay rendering elements for the map*/
 /* Order here matters for rendering purposes - use caution when swapping these around! */
 roomDiv {
   width: 80px;

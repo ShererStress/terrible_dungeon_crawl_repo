@@ -79,6 +79,7 @@ class Creature {
     }
     let damageTaken = incomingDamage-effectiveArmor;
     this.fatigue -= damageTaken;
+    this.currentBattlefield.updateHealthValues();
     return(damageTaken);
   };
 
@@ -163,13 +164,11 @@ class Adventurer extends Creature {
     woundDamage += Math.floor(damageTaken/(Math.floor(this.maxWounds/10)));
     //console.log("TOTAL WOUND DAMAGE: "+ woundDamage);
     this.wounds -= woundDamage;
+    this.currentBattlefield.updateHealthValues();
   };
 
   logHealth() {
-    console.log(`${this.fatigue}/${this.wounds}/${this.maxWounds}`);
-
-    //CHANGE THIS - make some actual status boxes
-    document.getElementById("charOneHP").textContent = `${this.fatigue}/${this.wounds}/${this.maxWounds}`;
+    //console.log(`${this.fatigue}/${this.wounds}/${this.maxWounds}`);
   };
 
   //Same as the creatures, but allows the combat flow to continue
@@ -248,9 +247,15 @@ class Battlefield {
   //Called once at the start of each fight
   startCombat() {
 
-    let newEnemy = new Creature();
-    this.enemyList.push(newEnemy);
+    //loop for more foes
+    for (let i = 0; i < 2; i++) {
+      let newEnemy = new Creature();
+      this.enemyList.push(newEnemy);
+    }
 
+    for(let i =0; i < this.enemyList.length; i++) {
+      this.enemyList[i].currentBattlefield = this;
+    }
 
     //once the player has entered all commands, we can use a chain of functions (although being able to slow down or pause the combat would be nice - use setDelay!)
     this.combatState = 1;
@@ -267,35 +272,78 @@ class Battlefield {
   };
 
   displayPCStatBlocks() {
-    console.log("Making blocks");
-    console.log(this.playerCharacterList);
     for(let i = 0; i < this.playerCharacterList.length; i++) {
       let $newPCBlock = $("<div>").attr("id",`pcBlock${i}`);
       $newPCBlock.addClass("pcStatBlock");
       $newPCBlock.append($("<h1>").text(`${this.playerCharacterList[i].fatigue}`));
+
+      let $healthContainer = $("<div>").addClass("healthContainer");
+      let $fatigueBar = $("<bar>").addClass("fatigueBar");
+      $fatigueBar.attr("id",`pc${i}FatigueBar`);
+      let $woundBar = $("<bar>").addClass("woundBar");
+      $woundBar.attr("id",`pc${i}WoundBar`);
+      let currentFatigue = this.playerCharacterList[i].fatigue;
+      let currentWounds = this.playerCharacterList[i].wounds;
+      let maxWounds = this.playerCharacterList[i].maxWounds;
+      $fatigueBar.css("width",`${100*currentFatigue/currentWounds}%`);
+      $woundBar.css("width",`${100*currentWounds/maxWounds}%`);
+
       $("#playerCharacterZone").append($newPCBlock);
+      $($newPCBlock).append($healthContainer);
+      $healthContainer.append($woundBar);
+      $woundBar.append($fatigueBar);
+
     }
+  console.log("redisplayed");
   };
 
   displayEnemyStatBlocks() {
-    console.log("Making blocks");
-    console.log(this.enemyList);
     for(let i = 0; i < this.enemyList.length; i++) {
-      let $newPCBlock = $("<div>").attr("id",`enemyBlock${i}`);
-      $newPCBlock.addClass("enemyStatBlock");
-      $newPCBlock.append($("<h1>").text(`${this.enemyList[i].fatigue}`));
-      $("#enemyZone").append($newPCBlock);
+      //The id of the blocks will change as other enemies are removed from the array - they will have to be changed dynamically!
+      let $newEnemyBlock = $("<div>").attr("id",`enemyBlock${i}`);
+      $newEnemyBlock.addClass("enemyStatBlock");
+      $newEnemyBlock.append($("<h1>").text(`${this.enemyList[i].fatigue}`));
+
+      let $healthContainer = $("<div>").addClass("healthContainer");
+      let $fatigueBar = $("<bar>").addClass("fatigueBar");
+      $fatigueBar.attr("id",`enemy${i}FatigueBar`);
+      let currentFatigue = this.enemyList[i].fatigue;
+      let maxWounds = this.enemyList[i].maxWounds;
+      $fatigueBar.css("width",`${100*currentFatigue/maxWounds}%`);
+
+      $("#enemyZone").append($newEnemyBlock);
+      $($newEnemyBlock).append($healthContainer);
+      $healthContainer.append($fatigueBar);
     }
   };
 
+  //Goes through all characters and updates fatigue/wounds
+  updateHealthValues() {
+    for(let i = 0; i < this.playerCharacterList.length; i++) {
+      let currentFatigue = this.playerCharacterList[i].fatigue;
+      let currentWounds = this.playerCharacterList[i].wounds;
+      let maxWounds = this.playerCharacterList[i].maxWounds;
+      let $healthText = `${currentFatigue}/${currentWounds}`;
+      $(`#pcBlock${i}`).children().eq(0).text($healthText);
+      $(`#pc${i}WoundBar`).css("width",`${100*currentWounds/maxWounds}%`);
+      $(`#pc${i}FatigueBar`).css("width",`${100*currentFatigue/currentWounds}%`);
+    }
+      for(let i = 0; i < this.enemyList.length; i++) {
+        let currentFatigue = this.enemyList[i].fatigue;
+        let maxFatigue = this.enemyList[i].maxWounds;
+        let healthText = `${currentFatigue}/${maxFatigue}`;
+        console.log(`DAMAGE HERE ${100*currentFatigue/maxFatigue}%`);
+        $(`#enemyBlock${i}`).children().eq(0).text(healthText);
+        $(`#enemy${i}FatigueBar`).css("width",`${100*currentFatigue/maxFatigue}%`);
+      }
+  };
 
   //Creates buttons for one of the characters the player controls
   //Each time it is called, it applies to the next character in the group; calls playerTurnComplete each time
   primePlayerTurn() {
     //Index for each player
-    console.log(this.playerCharacterList);
-    console.log(this.currentPlayerCharacter);
-    console.log(this.playerCharacterList[this.currentPlayerCharacter]);
+
+    console.log("Current turn: " + this.playerCharacterList[this.currentPlayerCharacter].name);
 
 
     this.currentPlayerCharacter++;
@@ -380,7 +428,6 @@ class ForceOfNature {
     let todaysDate = new Date;
     //Get quake data from just today
     this.queryString = `https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&starttime=${todaysDate.getFullYear()}-${todaysDate.getMonth()+1}-${todaysDate.getDate()}`;
-    console.log(this.queryString);
 
     //API magic
     const promise = $.ajax({
@@ -393,7 +440,6 @@ class ForceOfNature {
         let quakeData = data.features[Math.floor(Math.random()*data.features.length)].properties.mag;
 
         //send the data somewhere
-        console.log(quakeData);
         $("#combatLog").text(`Found some earthquare data: ${quakeData}`);
       },
       ()=>{
