@@ -151,6 +151,8 @@ class Creature {
     } else {
       this.overwhelmedState = 0;
     }
+    //Now update everything's Atk/Arm/Threat values
+    this.currentBattlefield.updateAttackArmorThreatValues();
   };
 
   //Loops through this creature's threat array and removes itself from other creates threat lists. Then deletes this creates threat list. Used in case of retreat or death.
@@ -184,7 +186,7 @@ class Adventurer extends Creature {
     this.maxWounds = 40;
     this.wounds = 40;
     this.fatigue = 40;
-    this.engagementThreshold = 2;
+    this.engagementThreshold = 3;
 
     this.damage = 9;
     this.armor = 3;
@@ -231,17 +233,33 @@ class Adventurer extends Creature {
 
   //Displays the buttons to allow the player to input a turn. This may get REALLY bloated.
   displayTurnOptions(keysIn = []) {
+    console.log("generating options");
+    $("#commandList").empty();
     let buttonOwner = this;
-    document.getElementById("rollInitButton").textContent = "Damage target";
-    document.getElementById("rollInitButton").addEventListener("click", function() {
-      for(let i = 0; i < buttonOwner.currentBattlefield.enemyList.length; i++) {
-        if(buttonOwner.currentBattlefield.enemyList[i].aliveBool) {
+    for(let i = 0; i < this.currentBattlefield.enemyList.length; i++) {
+      if(this.currentBattlefield.enemyList[i].aliveBool) {
+        let $newButton = $("<button>").text(`Threaten: ${this.currentBattlefield.enemyList[i].name}`);
+        $newButton.addClass("commandButton");
+        $newButton.on("click", function() {
           buttonOwner.engageTarget(buttonOwner.currentBattlefield.enemyList[i],1);
-          return;
-        }
+        });
+        $("#commandList").append($newButton)
       }
+    }
+    //This won't work forever as more buttons are added
+    if($("#commandList").children().length === 0) {
       console.log("No foes remain.");
-    });
+      return;
+    }
+    // $("#testButton").on("click", function() {
+    //   for(let i = 0; i < buttonOwner.currentBattlefield.enemyList.length; i++) {
+    //     if(buttonOwner.currentBattlefield.enemyList[i].aliveBool) {
+    //
+    //
+    //     }
+    //   }
+    //
+    // });
 
   };
 
@@ -319,7 +337,7 @@ class Battlefield {
     this.primePlayerTurn();
   };
 
-  //Sets up player statblocks. Currently has health values: bar.
+  //Sets up player statblocks. Currently has name, health values, health bar, attack and armor
   createPCStatBlocks() {
     $("#playerCharacterZone").empty();
     for(let i = 0; i < this.playerCharacterList.length; i++) {
@@ -329,15 +347,13 @@ class Battlefield {
       let maxWounds = this.playerCharacterList[i].maxWounds;
       let damage = this.playerCharacterList[i].calculateDamage();
       let armor = this.playerCharacterList[i].calculateDR();
-
-      console.log(damage);
-      console.log(armor);
+      let threat = this.playerCharacterList[i].totalEngagement;
+      let maxThreat = this.playerCharacterList[i].engagementThreshold;
 
       let $newPCBlock = $("<div>").attr("id",`pc${i}Block`);
       $newPCBlock.addClass("pcStatBlock");
       $newPCBlock.append($("<h4>").text(`${this.playerCharacterList[i].name}`).css("margin","1em"));
       let $flexContainerHealth = $("<div>").addClass("flexBoxRow");
-
 
       let $healthContainer = $("<div>").addClass("healthContainer").css("margin", "auto");
       let $fatigueBar = $("<bar>").addClass("fatigueBar");
@@ -355,6 +371,7 @@ class Battlefield {
       $flexContainerHealth.append($("<h3>").text(`${currentFatigue}/${currentWounds}`).css("margin","auto"));
       $newPCBlock.append($("<h3>").text(`Attack: ${damage}`));
       $newPCBlock.append($("<h3>").text(`Armor: ${armor}`));
+      $newPCBlock.append($("<h3>").text(`Threat: ${threat}/${maxThreat}`));
 
     }
   };
@@ -403,6 +420,21 @@ class Battlefield {
       }
   };
 
+  updateAttackArmorThreatValues() {
+      for(let i = 0; i < this.playerCharacterList.length; i++) {
+        let damage = this.playerCharacterList[i].calculateDamage();
+        let armor = this.playerCharacterList[i].calculateDR();
+        let threat = this.playerCharacterList[i].totalEngagement;
+        let maxThreat = this.playerCharacterList[i].engagementThreshold;
+
+        $(`#pc${i}Block`).children().eq(2).text(`Attack: ${damage}`);
+        $(`#pc${i}Block`).children().eq(3).text(`Armor: ${armor}`);
+        $(`#pc${i}Block`).children().eq(4).text(`Threat: ${threat}/${maxThreat}`);
+      }
+      for(let i = 0; i < this.enemyList.length; i++) {
+      }
+  }
+
   //Creates buttons for one of the characters the player controls
   //Each time it is called, it applies to the next character in the group; calls playerTurnComplete each time
   primePlayerTurn() {
@@ -425,7 +457,7 @@ class Battlefield {
       this.enemyTurn();
     } else {
       console.log("we goofed");
-      primePlayerTurn()
+      primePlayerTurn();
     }
   }
 
@@ -465,12 +497,18 @@ class Battlefield {
 
     //console.log("Done?");
 
-    console.log(this.playerCharacterList[0].engagedFoes);
-    console.log(this.enemyList[0].engagedFoes);
-    console.log(this.enemyList[1].engagedFoes);
+    //console.log(this.playerCharacterList[0].engagedFoes);
+    //console.log(this.enemyList[0].engagedFoes);
+    //console.log(this.enemyList[1].engagedFoes);
     //actions/damage
     //pause for button confirm
     //roundCleanup()
+
+
+    //reset the round - temporary
+    this.combatState = 1;
+    this.currentPlayerCharacter = 0;
+    this.primePlayerTurn();
   }
 
   //

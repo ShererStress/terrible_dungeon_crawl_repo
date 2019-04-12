@@ -82,6 +82,9 @@ li {
   border-radius: 2px;
 }
 
+.commandButton:hover{
+  background: rgba(100, 100, 100, .6);
+}
 
 div {
 
@@ -126,7 +129,7 @@ div {
 
 .pcStatBlock {
   width: 100%;
-  height: 150px;
+  height: 200px;
   background-color: #e5c990;
   border: 3px solid #5e5542;
   box-sizing: border-box;
@@ -199,9 +202,6 @@ button {
   padding: 4px;
 }
 
-#rollInitButton:hover{
-  background: rgba(100, 100, 100, .6);
-}
 
 .menuButtons:hover{
   background: rgba(100, 100, 100, .6);
