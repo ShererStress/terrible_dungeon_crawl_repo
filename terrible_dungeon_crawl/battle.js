@@ -39,7 +39,7 @@ class Creature {
     this.fatigue = 20;
     this.maxWounds = 20; //used to keep track of max fatigue
 
-    this.damage = 6;
+    this.damage = 9;
     this.armor = 1;
 
     this.onesGroup;
@@ -262,29 +262,33 @@ class Battlefield {
     this.displayBattlefield();
   }
 
-  //Adds dynamic html elements
+  //Adds dynamic html elements. Call once at start of combat, but can also be used to refresh everything about all statblocks.
   displayBattlefield() {
     this.displayPCStatBlocks();
     this.displayEnemyStatBlocks();
 
-
     this.primePlayerTurn();
   };
 
+  //Sets up player statblocks. Currently has health values: bar.
   displayPCStatBlocks() {
+    $("#playerCharacterZone").empty();
     for(let i = 0; i < this.playerCharacterList.length; i++) {
+
+      let currentFatigue = this.playerCharacterList[i].fatigue;
+      let currentWounds = this.playerCharacterList[i].wounds;
+      let maxWounds = this.playerCharacterList[i].maxWounds;
+
       let $newPCBlock = $("<div>").attr("id",`pcBlock${i}`);
       $newPCBlock.addClass("pcStatBlock");
-      $newPCBlock.append($("<h1>").text(`${this.playerCharacterList[i].fatigue}`));
+      $newPCBlock.append($("<h4>").text(`${this.playerCharacterList[i].name}`));
+      $newPCBlock.append($("<h3>").text(`${currentFatigue}/${currentWounds}`));
 
       let $healthContainer = $("<div>").addClass("healthContainer");
       let $fatigueBar = $("<bar>").addClass("fatigueBar");
       $fatigueBar.attr("id",`pc${i}FatigueBar`);
       let $woundBar = $("<bar>").addClass("woundBar");
       $woundBar.attr("id",`pc${i}WoundBar`);
-      let currentFatigue = this.playerCharacterList[i].fatigue;
-      let currentWounds = this.playerCharacterList[i].wounds;
-      let maxWounds = this.playerCharacterList[i].maxWounds;
       $fatigueBar.css("width",`${100*currentFatigue/currentWounds}%`);
       $woundBar.css("width",`${100*currentWounds/maxWounds}%`);
 
@@ -294,21 +298,25 @@ class Battlefield {
       $woundBar.append($fatigueBar);
 
     }
-  console.log("redisplayed");
   };
 
   displayEnemyStatBlocks() {
+    $("#enemyZone").empty();
     for(let i = 0; i < this.enemyList.length; i++) {
+
+      let currentFatigue = this.enemyList[i].fatigue;
+      let maxWounds = this.enemyList[i].maxWounds;
+
       //The id of the blocks will change as other enemies are removed from the array - they will have to be changed dynamically!
       let $newEnemyBlock = $("<div>").attr("id",`enemyBlock${i}`);
       $newEnemyBlock.addClass("enemyStatBlock");
-      $newEnemyBlock.append($("<h1>").text(`${this.enemyList[i].fatigue}`));
+      $newEnemyBlock.append($("<h4>").text(`${this.enemyList[i].name}`));
+      $newEnemyBlock.append($("<h3>").text(`${currentFatigue}/${maxWounds}`));
 
       let $healthContainer = $("<div>").addClass("healthContainer");
       let $fatigueBar = $("<bar>").addClass("fatigueBar");
       $fatigueBar.attr("id",`enemy${i}FatigueBar`);
-      let currentFatigue = this.enemyList[i].fatigue;
-      let maxWounds = this.enemyList[i].maxWounds;
+
       $fatigueBar.css("width",`${100*currentFatigue/maxWounds}%`);
 
       $("#enemyZone").append($newEnemyBlock);
@@ -324,7 +332,7 @@ class Battlefield {
       let currentWounds = this.playerCharacterList[i].wounds;
       let maxWounds = this.playerCharacterList[i].maxWounds;
       let $healthText = `${currentFatigue}/${currentWounds}`;
-      $(`#pcBlock${i}`).children().eq(0).text($healthText);
+      $(`#pcBlock${i}`).children().eq(1).text($healthText);
       $(`#pc${i}WoundBar`).css("width",`${100*currentWounds/maxWounds}%`);
       $(`#pc${i}FatigueBar`).css("width",`${100*currentFatigue/currentWounds}%`);
     }
@@ -332,8 +340,7 @@ class Battlefield {
         let currentFatigue = this.enemyList[i].fatigue;
         let maxFatigue = this.enemyList[i].maxWounds;
         let healthText = `${currentFatigue}/${maxFatigue}`;
-        console.log(`DAMAGE HERE ${100*currentFatigue/maxFatigue}%`);
-        $(`#enemyBlock${i}`).children().eq(0).text(healthText);
+        $(`#enemyBlock${i}`).children().eq(1).text(healthText);
         $(`#enemy${i}FatigueBar`).css("width",`${100*currentFatigue/maxFatigue}%`);
       }
   };

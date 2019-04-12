@@ -47,6 +47,7 @@ sectionCombat {
   background-color: green;
   display: flex;
   flex-direction: column;
+  justify-content: center;
 }
 
 #centerZone{
@@ -58,6 +59,7 @@ sectionCombat {
   width: 250px;
   display: flex;
   flex-direction: column;
+  justify-content: center;
 }
 
 ul {
