@@ -65,8 +65,22 @@ div {
   bottom: -106px;
   left: -3px;
   transform: translate(50%, 0%;)
+}
 
+.pcStatBlock {
+  width: 100%;
+  height: 150px;
+  background-color: #e5c990;
+  border: 3px solid #5e5542;
+  box-sizing: border-box;
+}
 
+.enemyStatBlock {
+  width: 100%;
+  height: 150px;
+  background-color: #e5c990;
+  border: 3px solid #5e5542;
+  box-sizing: border-box;
 }
 
 section {
@@ -87,6 +101,7 @@ sectionCombat {
   width: 250px;
   background-color: green;
   display: flex;
+  flex-direction: column;
 }
 
 #centerZone{
@@ -97,6 +112,7 @@ sectionCombat {
   background-color: red;
   width: 250px;
   display: flex;
+  flex-direction: column;
 }
 
 ul {

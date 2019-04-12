@@ -24,7 +24,7 @@ everything else should still be automated at this point
 
 */
 
-$(()=>{
+$(()=>{ //Start jQuery
 
 //The basis for most in-game creatures
 //Only uses fatigue for health - no wounds
@@ -224,6 +224,7 @@ class Battlefield {
 
     this.playerCharacterList = playerGroupIn.playerList;
 
+    //Lets the PCs easily refer to this class
     for(let i =0; i < this.playerCharacterList.length; i++) {
       this.playerCharacterList[i].currentBattlefield = this;
     }
@@ -253,8 +254,40 @@ class Battlefield {
 
     //once the player has entered all commands, we can use a chain of functions (although being able to slow down or pause the combat would be nice - use setDelay!)
     this.combatState = 1;
-    this.primePlayerTurn();
+    this.displayBattlefield();
   }
+
+  //Adds dynamic html elements
+  displayBattlefield() {
+    this.displayPCStatBlocks();
+    this.displayEnemyStatBlocks();
+
+
+    this.primePlayerTurn();
+  };
+
+  displayPCStatBlocks() {
+    console.log("Making blocks");
+    console.log(this.playerCharacterList);
+    for(let i = 0; i < this.playerCharacterList.length; i++) {
+      let $newPCBlock = $("<div>").attr("id",`pcBlock${i}`);
+      $newPCBlock.addClass("pcStatBlock");
+      $newPCBlock.append($("<h1>").text(`${this.playerCharacterList[i].fatigue}`));
+      $("#playerCharacterZone").append($newPCBlock);
+    }
+  };
+
+  displayEnemyStatBlocks() {
+    console.log("Making blocks");
+    console.log(this.enemyList);
+    for(let i = 0; i < this.enemyList.length; i++) {
+      let $newPCBlock = $("<div>").attr("id",`enemyBlock${i}`);
+      $newPCBlock.addClass("enemyStatBlock");
+      $newPCBlock.append($("<h1>").text(`${this.enemyList[i].fatigue}`));
+      $("#enemyZone").append($newPCBlock);
+    }
+  };
+
 
   //Creates buttons for one of the characters the player controls
   //Each time it is called, it applies to the next character in the group; calls playerTurnComplete each time
@@ -269,7 +302,7 @@ class Battlefield {
     if(this.currentPlayerCharacter === this.playerCharacterList.length) {
       this.combatState = 2;
     }
-    //Should just move stuff around and use a callback
+
     this.playerCharacterList[this.currentPlayerCharacter-1].displayTurnOptions();
   }
 
@@ -334,7 +367,7 @@ class PlayerGroup {
 
 } //End PlayerGroup class
 
-//The class used to get USGS data and so something with it.
+//The class used to get USGS data and do something with it.
 class ForceOfNature {
   constructor() {
     //change to USGS
@@ -361,7 +394,7 @@ class ForceOfNature {
 
         //send the data somewhere
         console.log(quakeData);
-        $("#combatLog").text(quakeData);
+        $("#combatLog").text(`Found some earthquare data: ${quakeData}`);
       },
       ()=>{
         console.log('bad request');
@@ -432,7 +465,7 @@ quake.getExternalData();
 
 
 
-});
+}); //End jQuery
 
 
 

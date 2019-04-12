@@ -11,7 +11,8 @@ Line of sight? Just cardinal directions?
 save/load seems feasible, given setItem and getItem using local storage
 simple map data, and character data seem prudent to save
 */
-
+$(()=>{ //Start jQuery
+  
 ////// Button listeners
 document.getElementById(`helpButton`).addEventListener("click", showHelp );
 document.getElementById(`closeHelpButton`).addEventListener("click", hideHelp);
@@ -607,6 +608,14 @@ class GroupLocation {
   const theParty = new GroupLocation(theSpire.floorList[0],0,0);
 
   displayMap(theParty.currentFloor.mapData);
+
+
+
+
+}); //End jQuery
+
+
+
 
   //generatePath(theSpire.floorList[0].mapData, 0, 0, 7, 8);
 
