@@ -1,0 +1,202 @@
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #404959;
+  position: relative;
+}
+
+mapArea {
+
+}
+
+#mapZone {
+  width: 404px;
+  height: 404px;
+  background-color: black;
+  position: absolute;
+  top: 75px;
+  left: 75px;
+  display: flex;
+  flex-wrap: wrap;
+  box-sizing: border-box;
+  border: 2px solid black;
+}
+
+button {
+  outline: none;
+}
+
+div {
+
+}
+
+.helpBox {
+  display: none;
+}
+
+.centerTextbox{
+  background-color: #afb4bc;
+	height: 350px;
+	width: 550px;
+	border-radius: 3px;
+	margin: 150px auto;
+  border: 3px solid white;
+  text-align: center;
+}
+
+#combatBox {
+  background-color: #e5c990;
+	height: 600px;
+	width: 1000px;
+	border-radius: 2px;
+	margin: 75px auto;
+  border: 3px solid #5e5542;
+  text-align: center;
+  position: relative;
+  display: flex;
+}
+
+#combatLog {
+  background-color: #e5c990;
+  border: 3px solid #5e5542;
+  width: 1000px;
+  height: 100px;
+  position: absolute;
+  bottom: -106px;
+  left: -3px;
+  transform: translate(50%, 0%;)
+
+
+}
+
+section {
+
+}
+
+sectionCombat {
+
+}
+
+#commandZone{
+  background-color: blue;
+  width: 200px;
+}
+
+#playerCharacterZone {
+  height: 100%;
+  width: 250px;
+  background-color: green;
+  display: flex;
+}
+
+#centerZone{
+  width: 300px;
+}
+
+#enemyZone {
+  background-color: red;
+  width: 250px;
+  display: flex;
+}
+
+ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+li {
+  width: 100%;
+}
+
+.commandButton{
+  width: 100%;
+  font-size: 25px;
+  border-radius: 2px;
+}
+
+
+modal {
+  background-color: rgba(0,0,0,0.4);
+	position: fixed;
+	top: 0;
+	left: 0;
+	height: 100%;
+	width: 100%;
+	z-index: 1;
+	overflow: auto;
+}
+
+#combatOverlay {
+  background-color: rgba(80,0,0,0.6);
+  z-index: 2;
+}
+
+button {
+  padding: 4px;
+}
+
+#rollInitButton:hover{
+  background: rgba(100, 100, 100, .6);
+}
+
+.menuButtons:hover{
+  background: rgba(100, 100, 100, .6);
+}
+
+/* Gameplay rendering elements */
+/* Order here matters for rendering purposes - use caution when swapping these around! */
+roomDiv {
+  width: 80px;
+  height: 80px;
+  background-color: black;
+  box-sizing: border-box;
+  border: 2px solid black;
+}
+
+.roomButton {
+  width: 80px;
+  height: 80px;
+  background-color: black;
+  box-sizing: border-box;
+  border: 2px solid black;
+}
+
+.roomButton:hover {
+  /* background: rgba(180, 180, 180, .4); */
+  border: 6px dashed  #404959;
+}
+
+.topDoor {
+  border-top: 1px solid grey;
+}
+
+.rightDoor {
+  border-right: 1px solid grey;
+}
+
+.bottomDoor {
+  border-bottom: 1px solid grey;
+}
+
+.leftDoor {
+  border-left: 1px solid grey;
+}
+
+.explorable {
+  background-color: grey;
+  border: 10px solid black;
+  font-size: 30px;
+}
+
+.explored {
+  background-color: #e5c990;
+}
+
+.currentLoc {
+  background-color: red;
+}
+.hidden {
+  background-color: black;
+  border: 2px solid black;
+}

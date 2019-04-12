@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <title></title>
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <script
+  src="https://code.jquery.com/jquery-3.4.0.min.js"
+  integrity="sha256-BJeo0qm959uMBGb65z40ejJYGSgR7REI4+CW1fNKwOg="
+  crossorigin="anonymous"></script>
+  </head>
+  <body>
+    <button id="helpButton" class="menuButtons"> Show Controls and Legend </button>
+    <modal class="helpBox">
+    <div class="helpBox centerTextbox">
+      <h3> Click on areas to explore. You are located in the red square. </h3>
+      <button id="closeHelpButton" class="helpBox menuButtons"> Hide Controls and Legend </button>
+    </div>
+    </modal>
+    <mapArea id="mapZone"></mapArea>
+
+    <modal id="combatOverlay">
+      <div id="combatBox">
+        <sectionCombat id="commandZone">
+          <ul id="commandList">
+            <li><button id="rollInitButton" class="commandButton">-Roll Initiative-</button></li>
+          </ul>
+        </sectionCombat>
+        <sectionCombat id="playerCharacterZone">
+          <h2 id="charOneHP">  </h2>
+        </sectionCombat>
+        <sectionCombat id="centerZone">
+          <h3> Time to get that second script going. </h3>
+        </sectionCombat>
+        <sectionCombat id="enemyZone">
+          <h3> Foes go here. </h3>
+        </sectionCombat>
+        <div id="combatLog">
+          <h1> BLAH BLAH BLAH BLAH BLAH BLAH BLAH BLAH </h1>
+        </div>
+      </div>
+
+
+    </modal>
+
+    <script src="tdc.js"></script>
+    <script src="battle.js"></script>
+  </body>
+</html>
