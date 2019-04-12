@@ -3,8 +3,8 @@ body {
   padding: 0;
   background-color: #404959;
   position: relative;
-  font-family: 'VT323', monospace;
-  font-size: 20px;
+  font-family: 'Press Start 2P', cursive;
+  font-size: 12px;
 }
 
 mapArea {
@@ -25,7 +25,10 @@ mapArea {
 }
 
 button {
+  -webkit-appearance: button;
   outline: none;
+  font-family: 'Press Start 2P', cursive;
+  font-size: 8px;
 }
 
 
@@ -76,7 +79,6 @@ li {
 
 .commandButton{
   width: 100%;
-  font-size: 25px;
   border-radius: 2px;
 }
 
@@ -128,6 +130,8 @@ div {
   background-color: #e5c990;
   border: 3px solid #5e5542;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
 }
 
 .enemyStatBlock {
@@ -136,6 +140,7 @@ div {
   background-color: #e5c990;
   border: 3px solid #5e5542;
   box-sizing: border-box;
+
 }
 
 .healthContainer {
@@ -149,6 +154,11 @@ div {
 
 .deadCreature {
   background-color: #4f2b2b;
+}
+
+.flexBoxRow {
+  display: flex;
+  flex-direction: row;
 }
 
 bar {

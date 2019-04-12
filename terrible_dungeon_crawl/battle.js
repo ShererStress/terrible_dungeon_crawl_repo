@@ -39,7 +39,7 @@ class Creature {
     this.fatigue = 20;
     this.maxWounds = 20; //used to keep track of max fatigue
 
-    this.damage = 7;
+    this.damage = 8;
     this.armor = 1;
 
     this.onesGroup;
@@ -52,8 +52,8 @@ class Creature {
   //Do some damage. By default, this is applied to something in the array of engaged foes.
   //Getting an undefined error? Make some notArray -> array code
   attack(targetList = this.engagedFoes) {
-    let damageModifier = this.engagementThreshold - this.totalEngagement; //Change as things are implemented
-    let totalDamage = this.damage + damageModifier;
+
+    let totalDamage = this.calculateDamage();
     //Pick a target - new function?
     let possibleTargetArray = [];
     let highestPriority = 0;
@@ -75,11 +75,13 @@ class Creature {
     target.takeDamage(totalDamage);
   };
 
+  calculateDamage() {
+    //let damageModifier = this.engagementThreshold - ;
+    return(this.damage - this.totalEngagement);
+  }
+
   takeDamage(incomingDamage) {
-    let effectiveArmor = this.armor;
-    if(this.overwhelmedState === 2) {
-      effectiveArmor -= (this.totalEngagement - this.engagementThreshold);
-    }
+    let effectiveArmor = this.calculateDR();
     let damageTaken = incomingDamage-effectiveArmor;
     this.fatigue -= damageTaken;
     this.currentBattlefield.updateHealthValues();
@@ -90,6 +92,14 @@ class Creature {
     }
     return(damageTaken);
   };
+
+  calculateDR() {
+    let effectiveArmor = this.armor;
+    if(this.overwhelmedState === 2) {
+      effectiveArmor -= (this.totalEngagement - this.engagementThreshold);
+    }
+    return(effectiveArmor);
+  }
 
   engageTarget(targetCreature, reciprocateBoolean = 0) {
     //Search list of engaged targets for the foe
@@ -176,7 +186,7 @@ class Adventurer extends Creature {
     this.fatigue = 40;
     this.engagementThreshold = 2;
 
-    this.damage = 7;
+    this.damage = 9;
     this.armor = 3;
 
     this.aliveBool = true;
@@ -303,50 +313,59 @@ class Battlefield {
 
   //Adds dynamic html elements. Call once at start of combat, but can also be used to refresh everything about all statblocks.
   displayBattlefield() {
-    this.displayPCStatBlocks();
-    this.displayEnemyStatBlocks();
+    this.createPCStatBlocks();
+    this.createEnemyStatBlocks();
 
     this.primePlayerTurn();
   };
 
   //Sets up player statblocks. Currently has health values: bar.
-  displayPCStatBlocks() {
+  createPCStatBlocks() {
     $("#playerCharacterZone").empty();
     for(let i = 0; i < this.playerCharacterList.length; i++) {
 
       let currentFatigue = this.playerCharacterList[i].fatigue;
       let currentWounds = this.playerCharacterList[i].wounds;
       let maxWounds = this.playerCharacterList[i].maxWounds;
+      let damage = this.playerCharacterList[i].calculateDamage();
+      let armor = this.playerCharacterList[i].calculateDR();
+
+      console.log(damage);
+      console.log(armor);
 
       let $newPCBlock = $("<div>").attr("id",`pc${i}Block`);
       $newPCBlock.addClass("pcStatBlock");
-      $newPCBlock.append($("<h4>").text(`${this.playerCharacterList[i].name}`));
-      $newPCBlock.append($("<h3>").text(`${currentFatigue}/${currentWounds}`));
+      $newPCBlock.append($("<h4>").text(`${this.playerCharacterList[i].name}`).css("margin","1em"));
+      let $flexContainerHealth = $("<div>").addClass("flexBoxRow");
 
-      let $healthContainer = $("<div>").addClass("healthContainer");
+
+      let $healthContainer = $("<div>").addClass("healthContainer").css("margin", "auto");
       let $fatigueBar = $("<bar>").addClass("fatigueBar");
       $fatigueBar.attr("id",`pc${i}FatigueBar`);
       let $woundBar = $("<bar>").addClass("woundBar");
       $woundBar.attr("id",`pc${i}WoundBar`);
       $fatigueBar.css("width",`${100*currentFatigue/currentWounds}%`);
       $woundBar.css("width",`${100*currentWounds/maxWounds}%`);
-
-      $("#playerCharacterZone").append($newPCBlock);
-      $($newPCBlock).append($healthContainer);
       $healthContainer.append($woundBar);
       $woundBar.append($fatigueBar);
+
+      $("#playerCharacterZone").append($newPCBlock);
+      $newPCBlock.append($flexContainerHealth);
+      $flexContainerHealth.append($healthContainer);
+      $flexContainerHealth.append($("<h3>").text(`${currentFatigue}/${currentWounds}`).css("margin","auto"));
+      $newPCBlock.append($("<h3>").text(`Attack: ${damage}`));
+      $newPCBlock.append($("<h3>").text(`Armor: ${armor}`));
 
     }
   };
 
-  displayEnemyStatBlocks() {
+  createEnemyStatBlocks() {
     $("#enemyZone").empty();
     for(let i = 0; i < this.enemyList.length; i++) {
 
       let currentFatigue = this.enemyList[i].fatigue;
       let maxWounds = this.enemyList[i].maxWounds;
 
-      //The id of the blocks will change as other enemies are removed from the array - they will have to be changed dynamically!
       let $newEnemyBlock = $("<div>").attr("id",`enemy${i}Block`);
       $newEnemyBlock.addClass("enemyStatBlock");
       $newEnemyBlock.append($("<h4>").text(`${this.enemyList[i].name}`));
@@ -355,7 +374,6 @@ class Battlefield {
       let $healthContainer = $("<div>").addClass("healthContainer");
       let $fatigueBar = $("<bar>").addClass("fatigueBar");
       $fatigueBar.attr("id",`enemy${i}FatigueBar`);
-
       $fatigueBar.css("width",`${100*currentFatigue/maxWounds}%`);
 
       $("#enemyZone").append($newEnemyBlock);
@@ -371,7 +389,8 @@ class Battlefield {
       let currentWounds = this.playerCharacterList[i].wounds;
       let maxWounds = this.playerCharacterList[i].maxWounds;
       let $healthText = `${currentFatigue}/${currentWounds}`;
-      $(`#pc${i}Block`).children().eq(1).text($healthText);
+      //Change these values if the statblocks are rearranged!
+      $(`#pc${i}Block`).children().eq(1).children().eq(1).text($healthText);
       $(`#pc${i}WoundBar`).css("width",`${100*currentWounds/maxWounds}%`);
       $(`#pc${i}FatigueBar`).css("width",`${100*currentFatigue/currentWounds}%`);
     }
