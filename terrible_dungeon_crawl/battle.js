@@ -32,7 +32,7 @@ class Creature {
   constructor(nameIn = "RUNELORD") {
     this.name = nameIn;
     this.engagedFoes = [];
-    this.engagementThreshold = 1;
+    this.engagementThreshold = 2;
     this.totalEngagement = 0;
     this.overwhelmedState = 0; //0 -> no, 1 -> at limit, 2 -> Yes
 
@@ -87,6 +87,7 @@ class Creature {
     this.currentBattlefield.updateHealthValues();
     if( this.fatigue <= 0) { //If dead
       $(`#${this.battlefieldId}Block`).css("backgroundColor", "#4f2b2b");
+      $(`#${this.battlefieldId}Block`).css("border-color","#5e5542");
       this.aliveBool = false;
       this.clearThreat();
     }
@@ -186,9 +187,9 @@ class Adventurer extends Creature {
     this.maxWounds = 40;
     this.wounds = 40;
     this.fatigue = 40;
-    this.engagementThreshold = 3;
+    this.engagementThreshold = 7;
 
-    this.damage = 9;
+    this.damage = 13;
     this.armor = 3;
 
     this.aliveBool = true;
@@ -243,12 +244,19 @@ class Adventurer extends Creature {
         $newButton.on("click", function() {
           buttonOwner.engageTarget(buttonOwner.currentBattlefield.enemyList[i],1);
         });
+        $newButton.on("mouseenter", function() {
+          $(`#enemy${i}Block`).css("border-color","blue");
+        });
+        $newButton.on("mouseleave", function() {
+          $(`#enemy${i}Block`).css("border-color","#5e5542");
+        });
         $("#commandList").append($newButton)
       }
     }
     //This won't work forever as more buttons are added
     if($("#commandList").children().length === 0) {
       console.log("No foes remain.");
+
       return;
     }
     // $("#testButton").on("click", function() {
@@ -314,7 +322,7 @@ class Battlefield {
   startCombat() {
 
     //loop for more foes
-    for (let i = 0; i < 2; i++) {
+    for (let i = 0; i < 3; i++) {
       let newEnemy = new Creature(`RUNELORD${i+1}`);
       this.enemyList.push(newEnemy);
     }
