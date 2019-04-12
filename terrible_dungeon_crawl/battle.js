@@ -36,7 +36,7 @@ class Creature {
     this.totalEngagement = 0;
     this.overwhelmedState = 0; //0 -> no, 1 -> at limit, 2 -> Yes
 
-    this.fatigue = 10;
+    this.fatigue = 20;
     this.maxWounds = 20; //used to keep track of max fatigue
 
     this.damage = 7;
@@ -506,7 +506,7 @@ class ForceOfNature {
         let quakeData = data.features[Math.floor(Math.random()*data.features.length)].properties.mag;
 
         //send the data somewhere
-        $("#combatLog").text(`Found some earthquare data: ${quakeData}`);
+        $("#combatLog").text(`Found some earthquake data: ${quakeData}`);
       },
       ()=>{
         console.log('bad request');

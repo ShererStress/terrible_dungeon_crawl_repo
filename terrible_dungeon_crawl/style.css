@@ -3,6 +3,8 @@ body {
   padding: 0;
   background-color: #404959;
   position: relative;
+  font-family: 'VT323', monospace;
+  font-size: 20px;
 }
 
 mapArea {
@@ -154,7 +156,7 @@ bar {
 }
 
 .woundBar {
-  background-color: red;
+  background-color: #db3618;
   height: 20px;
   /* width: 90%; */
   display: flex;
