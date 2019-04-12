@@ -29,21 +29,24 @@ $(()=>{ //Start jQuery
 //The basis for most in-game creatures
 //Only uses fatigue for health - no wounds
 class Creature {
-  constructor() {
-    this.name = "RUNELORD";
+  constructor(nameIn = "RUNELORD") {
+    this.name = nameIn;
     this.engagedFoes = [];
     this.engagementThreshold = 1;
     this.totalEngagement = 0;
     this.overwhelmedState = 0; //0 -> no, 1 -> at limit, 2 -> Yes
 
-    this.fatigue = 20;
+    this.fatigue = 10;
     this.maxWounds = 20; //used to keep track of max fatigue
 
-    this.damage = 5;
+    this.damage = 7;
     this.armor = 1;
 
     this.onesGroup;
-    this.currentBattlefield;
+    this.currentBattlefield; //Allows references to battlefield
+    this.battlefieldId; //Used to refer to html element ids
+
+    this.aliveBool = true;
   };
 
   //Do some damage. By default, this is applied to something in the array of engaged foes.
@@ -80,6 +83,11 @@ class Creature {
     let damageTaken = incomingDamage-effectiveArmor;
     this.fatigue -= damageTaken;
     this.currentBattlefield.updateHealthValues();
+    if( this.fatigue <= 0) { //If dead
+      $(`#${this.battlefieldId}Block`).css("backgroundColor", "#4f2b2b");
+      this.aliveBool = false;
+      this.clearThreat();
+    }
     return(damageTaken);
   };
 
@@ -117,7 +125,6 @@ class Creature {
         targetCreature.engageTarget(this);
       }
     }
-
   };
 
   updateTotalEngagement() {
@@ -136,6 +143,24 @@ class Creature {
     }
   };
 
+  //Loops through this creature's threat array and removes itself from other creates threat lists. Then deletes this creates threat list. Used in case of retreat or death.
+  //this.engagedFoes.push([targetCreature,1]);
+  clearThreat() {
+    for (let i = 0; i < this.engagedFoes.length; i++) {
+      let currentCreature = this.engagedFoes[i][0];
+      let currentCreatureThreatList = this.engagedFoes[i][0].engagedFoes;
+      for (let j = 0; j < currentCreatureThreatList.length; j++) {
+        if(currentCreatureThreatList[j][0] === this) {
+          currentCreatureThreatList.splice(j,1);
+          currentCreature.updateTotalEngagement()
+        }
+      }
+    }
+    this.engagedFoes.splice(0,this.engagedFoes.length);
+    this.updateTotalEngagement();
+    console.log(`Cleared ${this.name}'s list`);
+  }
+
   logHealth() {
     console.log(`${this.fatigue}/${this.maxWounds}`);
   };
@@ -153,6 +178,8 @@ class Adventurer extends Creature {
 
     this.damage = 7;
     this.armor = 3;
+
+    this.aliveBool = true;
   };
 
   takeDamage(incomingDamage) {
@@ -165,10 +192,14 @@ class Adventurer extends Creature {
     //console.log("TOTAL WOUND DAMAGE: "+ woundDamage);
     this.wounds -= woundDamage;
     this.currentBattlefield.updateHealthValues();
+    if( this.wounds <= 0) { //If dead
+      $(`#${this.battlefieldId}Block`).css("backgroundColor", "#4f2b2b");
+      this.aliveBool = false;
+    }
   };
 
   logHealth() {
-    //console.log(`${this.fatigue}/${this.wounds}/${this.maxWounds}`);
+    console.log(`${this.fatigue}/${this.wounds}/${this.maxWounds}`);
   };
 
   //Same as the creatures, but allows the combat flow to continue
@@ -193,7 +224,13 @@ class Adventurer extends Creature {
     let buttonOwner = this;
     document.getElementById("rollInitButton").textContent = "Damage target";
     document.getElementById("rollInitButton").addEventListener("click", function() {
-      buttonOwner.engageTarget(buttonOwner.currentBattlefield.enemyList[0],1);
+      for(let i = 0; i < buttonOwner.currentBattlefield.enemyList.length; i++) {
+        if(buttonOwner.currentBattlefield.enemyList[i].aliveBool) {
+          buttonOwner.engageTarget(buttonOwner.currentBattlefield.enemyList[i],1);
+          return;
+        }
+      }
+      console.log("No foes remain.");
     });
 
   };
@@ -226,6 +263,7 @@ class Battlefield {
     //Lets the PCs easily refer to this class
     for(let i =0; i < this.playerCharacterList.length; i++) {
       this.playerCharacterList[i].currentBattlefield = this;
+      this.playerCharacterList[i].battlefieldId = `pc${i}`;
     }
 
     this.currentPlayerCharacter = 0;
@@ -249,12 +287,13 @@ class Battlefield {
 
     //loop for more foes
     for (let i = 0; i < 2; i++) {
-      let newEnemy = new Creature();
+      let newEnemy = new Creature(`RUNELORD${i+1}`);
       this.enemyList.push(newEnemy);
     }
 
     for(let i =0; i < this.enemyList.length; i++) {
       this.enemyList[i].currentBattlefield = this;
+      this.enemyList[i].battlefieldId = `enemy${i}`;
     }
 
     //once the player has entered all commands, we can use a chain of functions (although being able to slow down or pause the combat would be nice - use setDelay!)
@@ -279,7 +318,7 @@ class Battlefield {
       let currentWounds = this.playerCharacterList[i].wounds;
       let maxWounds = this.playerCharacterList[i].maxWounds;
 
-      let $newPCBlock = $("<div>").attr("id",`pcBlock${i}`);
+      let $newPCBlock = $("<div>").attr("id",`pc${i}Block`);
       $newPCBlock.addClass("pcStatBlock");
       $newPCBlock.append($("<h4>").text(`${this.playerCharacterList[i].name}`));
       $newPCBlock.append($("<h3>").text(`${currentFatigue}/${currentWounds}`));
@@ -308,7 +347,7 @@ class Battlefield {
       let maxWounds = this.enemyList[i].maxWounds;
 
       //The id of the blocks will change as other enemies are removed from the array - they will have to be changed dynamically!
-      let $newEnemyBlock = $("<div>").attr("id",`enemyBlock${i}`);
+      let $newEnemyBlock = $("<div>").attr("id",`enemy${i}Block`);
       $newEnemyBlock.addClass("enemyStatBlock");
       $newEnemyBlock.append($("<h4>").text(`${this.enemyList[i].name}`));
       $newEnemyBlock.append($("<h3>").text(`${currentFatigue}/${maxWounds}`));
@@ -332,7 +371,7 @@ class Battlefield {
       let currentWounds = this.playerCharacterList[i].wounds;
       let maxWounds = this.playerCharacterList[i].maxWounds;
       let $healthText = `${currentFatigue}/${currentWounds}`;
-      $(`#pcBlock${i}`).children().eq(1).text($healthText);
+      $(`#pc${i}Block`).children().eq(1).text($healthText);
       $(`#pc${i}WoundBar`).css("width",`${100*currentWounds/maxWounds}%`);
       $(`#pc${i}FatigueBar`).css("width",`${100*currentFatigue/currentWounds}%`);
     }
@@ -340,7 +379,7 @@ class Battlefield {
         let currentFatigue = this.enemyList[i].fatigue;
         let maxFatigue = this.enemyList[i].maxWounds;
         let healthText = `${currentFatigue}/${maxFatigue}`;
-        $(`#enemyBlock${i}`).children().eq(1).text(healthText);
+        $(`#enemy${i}Block`).children().eq(1).text(healthText);
         $(`#enemy${i}FatigueBar`).css("width",`${100*currentFatigue/maxFatigue}%`);
       }
   };
@@ -363,7 +402,6 @@ class Battlefield {
 
   //Whenever the player finishes selecting what to do on a turn, this should be called to move combat forward. Calls 'enemyTurn()' once all player characters have selected actions.
   playerTurnComplete() {
-    console.log(this.combatState);
     if(this.combatState === 2) {
       this.enemyTurn();
     } else {
@@ -375,22 +413,42 @@ class Battlefield {
   //Decides what the enemies do. Probably random for the most part, for my sake. Calls resolve combat once done (or primes a button to do so).
   enemyTurn() {
     for( let i = 0; i < this.enemyList.length; i++) {
-      this.enemyList[i].engageTarget(this.playerCharacterList[0],1);
+      if(this.enemyList[i].aliveBool) {
+        this.enemyList[i].engageTarget(this.playerCharacterList[0],1);
+      }
     }
 
     this.resolveCombat();
   }
 
-  //Now everything acts based on initative order. Need to find a way to store function calls (and their parameters!) to be used here. This one could get messy, depending how complicated combat becomes.
+  //Now everything acts based on initative order.
+  //Display the buttons that were made during the player's turn one at a time, each moves combat forward one turn with the correct action
+  // This one could get messy, depending how complicated combat becomes.
   resolveCombat() {
-    console.log("Resolving");
+
     for( let i = 0; i < this.playerCharacterList.length; i++) {
+      console.log(`${this.playerCharacterList[i].name} attacks!`);
       this.playerCharacterList[i].attack();
+
     }
     for( let i = 0; i < this.enemyList.length; i++) {
-      this.enemyList[i].attack();
+      if(this.enemyList[i].aliveBool) {
+        console.log(`${this.enemyList[i].name} attacks!`);
+        this.enemyList[i].attack();
+
+      } else {
+        console.log(`${this.enemyList[i].name} does nothing`);
+      }
+
     }
 
+    //this.playerCharacterList[0].clearThreat();
+
+    //console.log("Done?");
+
+    console.log(this.playerCharacterList[0].engagedFoes);
+    console.log(this.enemyList[0].engagedFoes);
+    console.log(this.enemyList[1].engagedFoes);
     //actions/damage
     //pause for button confirm
     //roundCleanup()
@@ -398,7 +456,7 @@ class Battlefield {
 
   //
   roundCleanUp() {
-    //remove the fallen, reset menus, etc.
+    // (DONT) remove the fallen, reset menus, etc.
     //Check for victory/defeat
 
     //temporary

@@ -145,6 +145,10 @@ div {
   border: 1px solid #5e5542;
 }
 
+.deadCreature {
+  background-color: #4f2b2b;
+}
+
 bar {
 
 }
