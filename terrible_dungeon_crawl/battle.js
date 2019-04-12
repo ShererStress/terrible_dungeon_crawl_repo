@@ -39,7 +39,7 @@ class Creature {
     this.fatigue = 20;
     this.maxWounds = 20; //used to keep track of max fatigue
 
-    this.damage = 9;
+    this.damage = 5;
     this.armor = 1;
 
     this.onesGroup;
@@ -149,10 +149,10 @@ class Adventurer extends Creature {
     this.maxWounds = 40;
     this.wounds = 40;
     this.fatigue = 40;
-    this.engagementThreshold = 3;
+    this.engagementThreshold = 2;
 
-    this.damage = 6;
-    this.armor = 2;
+    this.damage = 7;
+    this.armor = 3;
   };
 
   takeDamage(incomingDamage) {
@@ -173,11 +173,11 @@ class Adventurer extends Creature {
 
   //Same as the creatures, but allows the combat flow to continue
   engageTarget(targetCreature, reciprocateBoolean = 0) {
-    console.log("Getting there");
     super.engageTarget(targetCreature, reciprocateBoolean);
-    console.log("Getting there");
-    this.currentBattlefield.playerTurnComplete();
-  }
+    if(reciprocateBoolean === 1) {
+      this.currentBattlefield.playerTurnComplete();
+    }
+  };
 
 
 
@@ -374,25 +374,23 @@ class Battlefield {
 
   //Decides what the enemies do. Probably random for the most part, for my sake. Calls resolve combat once done (or primes a button to do so).
   enemyTurn() {
-    this.enemyList[0].engageTarget(garzmok,1);
-
-    garzmok.attack();
-    this.enemyList[0].attack();
-
-    garzmok.logHealth();
-    this.enemyList[0].logHealth();
-    if(this.enemyList[0].fatigue <= 0) {
-
-
-      //temporary
-      document.getElementById("combatOverlay").style.display = "none";
-
-      //-> resolveCombat();
+    for( let i = 0; i < this.enemyList.length; i++) {
+      this.enemyList[i].engageTarget(this.playerCharacterList[0],1);
     }
+
+    this.resolveCombat();
   }
 
   //Now everything acts based on initative order. Need to find a way to store function calls (and their parameters!) to be used here. This one could get messy, depending how complicated combat becomes.
   resolveCombat() {
+    console.log("Resolving");
+    for( let i = 0; i < this.playerCharacterList.length; i++) {
+      this.playerCharacterList[i].attack();
+    }
+    for( let i = 0; i < this.enemyList.length; i++) {
+      this.enemyList[i].attack();
+    }
+
     //actions/damage
     //pause for button confirm
     //roundCleanup()
@@ -402,6 +400,9 @@ class Battlefield {
   roundCleanUp() {
     //remove the fallen, reset menus, etc.
     //Check for victory/defeat
+
+    //temporary
+    //document.getElementById("combatOverlay").style.display = "none";
 
     // primePlayerTurn();
   }
