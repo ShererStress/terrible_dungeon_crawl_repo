@@ -396,7 +396,8 @@ $(()=>{ //Start jQuery
     startCombat() {
 
       //loop for more foes
-      for (let i = 0; i < 3; i++) {
+      let numberOfFoes = Math.floor(Math.random()*3)+1;
+      for (let i = 0; i < numberOfFoes; i++) {
         let newEnemy = new Creature(`RUNELORD${i+1}`);
         this.enemyList.push(newEnemy);
       }
@@ -586,7 +587,7 @@ $(()=>{ //Start jQuery
 
       //The buttons themselves are taking care of this for now - although this function should be used to arrange them in initiative order eventually.
 
-      clearCombatLog();
+      //clearCombatLog();
 
       let deadFoes = 0;
       for(let i = 0; i < this.enemyList.length; i++) {
@@ -595,9 +596,13 @@ $(()=>{ //Start jQuery
         }
       }
       if(deadFoes === this.enemyList.length) {
+        addToCombatLog("---")
+        addToCombatLog("---")
         addToCombatLog("No foes remain");
         this.combatCleanUp();
       } else {
+        addToCombatLog("---")
+        addToCombatLog("---")
         addToCombatLog("A new round begins")
         this.combatState = 1;
         this.currentPlayerCharacter = 0;
@@ -610,36 +615,51 @@ $(()=>{ //Start jQuery
     combatCleanUp() {
       console.log("cleanUp called");
 
-      //hide combat overlay
-      $("#combatOverlay").hide();
-
-      //reset battlefield values to default state
-      this.combatState = 0;
-      this.currentPlayerCharacter = 0;
-      this.enemyList = [];
-      this.actionsRemaining = 0;
-      //Initiative lists = [];
-
-      //restore PCs stamina
-      for(let i = 0; i < this.playerCharacterList.length; i++) {
-        let currentPC = this.playerCharacterList[i];
-        currentPC.fatigue = currentPC.wounds;
-      }
-      //create new roll initiative button that calls startCombat()
+      //make a new button (leaveBattle) that does the following - allows the player to see the outcome BEFORE leaving the battle screen
       let theBattlefield = this;
-      let $newInitButton = $("<button>").text("-Roll Initiative-");
-      $newInitButton.addClass("commandButton");
-      $newInitButton.on("click", function() {
-        addToCombatLog("Here we go again");
-        theBattlefield.startCombat();
-        this.remove();
-      });
-      $("#commandZone").append($newInitButton);
 
-      //Now update the html
-      this.updateHealthValues();
-      this.updateAttackArmorThreatValues();
-      this.createEnemyStatBlocks();
+      let $leaveBattleButton = $("<button>").text("-Resume exploration-");
+      $leaveBattleButton.addClass("commandButton");
+      $leaveBattleButton.on("click", function() {
+
+        //hide combat overlay
+        $("#combatOverlay").hide();
+
+        //reset battlefield values to default state
+        theBattlefield.combatState = 0;
+        theBattlefield.currentPlayerCharacter = 0;
+        theBattlefield.enemyList = [];
+        theBattlefield.actionsRemaining = 0;
+        //Initiative lists = [];
+
+        //restore PCs stamina
+        for(let i = 0; i < theBattlefield.playerCharacterList.length; i++) {
+          let currentPC = theBattlefield.playerCharacterList[i];
+          currentPC.fatigue = currentPC.wounds;
+        }
+
+        //create new roll initiative button that calls startCombat()
+
+        let $newInitButton = $("<button>").text("-Roll Initiative-");
+        $newInitButton.addClass("commandButton");
+        $newInitButton.on("click", function() {
+          addToCombatLog("Here we go again");
+          theBattlefield.startCombat();
+          this.remove();
+        });
+        $("#commandZone").append($newInitButton);
+
+        //Now update the html
+        theBattlefield.updateHealthValues();
+        theBattlefield.updateAttackArmorThreatValues();
+        theBattlefield.createEnemyStatBlocks();
+        clearCombatLog();
+        this.remove();
+        addToCombatLog("More foes.")
+
+      }); //End leaveBattleButton on click
+
+        $("#commandZone").append($leaveBattleButton);
 
     };
 
