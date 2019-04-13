@@ -12,10 +12,10 @@ save/load seems feasible, given setItem and getItem using local storage
 simple map data, and character data seem prudent to save
 */
 $(()=>{ //Start jQuery
-  
+
 ////// Button listeners
-document.getElementById(`helpButton`).addEventListener("click", showHelp );
-document.getElementById(`closeHelpButton`).addEventListener("click", hideHelp);
+$("#helpButton").on("click", showHelp );
+$("#closeHelpButton").on("click", hideHelp);
 
 //Example Map Arrays
 
@@ -370,70 +370,68 @@ class GroupLocation {
   //Takes 'complex' map data from a floor (the one that includes wall info), and generates a grid of buttons to the html. The colors/uses of the buttons depends on the room status.
   function displayMap(arrayIn) {
     //'mapZone' is the grid the buttons are fit into.
-    let map = document.getElementById("mapZone");
+    let $map = $("#mapZone");
     //Change these to rescale maps if it gets too big - remember to consider the effects of the borders!
-    map.style.height = `${4+(arrayIn.length)*80}px`;
-    map.style.width = `${4+(arrayIn[0].length)*80}px`;
+    $map.css("height", `${4+(arrayIn.length)*80}px`);
+    $map.css("width",`${4+(arrayIn[0].length)*80}px`);
 
     for(let i = 0; i < arrayIn.length; i++) {
       for(let j = 0; j < arrayIn[i].length; j++) {
         //Generate button names - "buttonR-C". The dash avoids two buttons having the same name in a few cases where row+column concatenation results in identical outcomes.
-        let newSquare = document.createElement("Button");
-        newSquare.setAttribute("id",`button${i}-${j}`)
-        newSquare.setAttribute("class", "roomButton")
+        let $newSquare = $("<Button>");
+        $newSquare.attr("id",`button${i}-${j}`)
+        $newSquare.attr("class", "roomButton")
         if(arrayIn[i][j][0] >= 1) {
           if(arrayIn[i][j][0] === 1) { //The room is black
-            newSquare.classList.add("hidden");
+            $newSquare.addClass("hidden");
           }
           if(arrayIn[i][j][0] === 2) { //The room is grey, and reachable
-            newSquare.classList.add("explorable");
-            newSquare.textContent = "?";
+            $newSquare.addClass("explorable");
+            $newSquare.text("?");
           }
           if(arrayIn[i][j][0] === 3) { //Room is white, and reachable
-            newSquare.classList.add("explored");
+            $newSquare.addClass("explored");
           }
           if(arrayIn[i][j][0] === 4) { //Red - indicates current location
-            newSquare.classList.add("currentLoc");
+            $newSquare.addClass("currentLoc");
           }
           if(arrayIn[i][j][1] === 1) { //Changes borders
-            newSquare.classList.add("topDoor");
+            $newSquare.addClass("topDoor");
           }
           if(arrayIn[i][j][2] === 1) {
-            newSquare.classList.add("rightDoor");
+            $newSquare.addClass("rightDoor");
           }
           if(arrayIn[i][j][3] === 1) {
-            newSquare.classList.add("bottomDoor");
+            $newSquare.addClass("bottomDoor");
           }
           if(arrayIn[i][j][4] === 1) {
-            newSquare.classList.add("leftDoor");
+            $newSquare.addClass("leftDoor");
           }
         }
-        map.appendChild(newSquare);
+        $map.append($newSquare);
         //currently calls the moveToLocation method for the group - change this if the buttons wind up doing something else!
-        document.getElementById(`button${i}-${j}`).addEventListener("click", function () {theParty.moveToLocation(i,j)} );
+        $(`#button${i}-${j}`).on("click", function () {
+          theParty.moveToLocation(i,j);
+        });
       }
     }//end loops
   };
 
   //This is bad to use each refresh, but will work given the size
   function clearMap() {
-    while(document.getElementById("mapZone").childNodes.length > 0) {
-      document.getElementById("mapZone").childNodes[0].remove();
+    while($("#mapZone").children().length > 0) {
+      $("#mapZone").empty();
     }
   };
 
   function showHelp() {
-    let htmlElements = document.getElementsByClassName("helpBox");
-    for (let i =0; i < htmlElements.length; i++) {
-      htmlElements[i].style.display = "block";
-    }
+    let $helpBoxElements = $(".helpBox");
+      $helpBoxElements.css("display", "block");
   };
 
   function hideHelp() {
-    let htmlElements = document.getElementsByClassName("helpBox");
-    for (let i =0; i < htmlElements.length; i++) {
-      htmlElements[i].style.display = "none";
-    }
+    let $helpBoxElements = $(".helpBox");
+      $helpBoxElements.css("display", "none");
   };
 
 

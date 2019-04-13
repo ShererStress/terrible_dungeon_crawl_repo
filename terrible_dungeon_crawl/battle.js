@@ -265,13 +265,12 @@ $(()=>{ //Start jQuery
       let pcID = this.battlefieldId.slice(-1); //Just get the number
 
       //If target=single enemy actions (threaten, ability use, disengage)
-      for(let i = 0; i < this.currentBattlefield.enemyList.length; i++) {
-        if(this.currentBattlefield.enemyList[i].aliveBool) { //Only make buttons pertaining to those still in combat - this allows others to ignore the dead
-          //use a switch here to select which function to tack onto the button
+      for(let n = 0; n < 1; n++) { //Increase to allow for more action types
+        for(let i = 0; i < this.currentBattlefield.enemyList.length; i++) {
+          if(this.currentBattlefield.enemyList[i].aliveBool) { //Only make buttons pertaining to those still in combat - this allows others to ignore the dead
+            //use a switch here to select which function to tack onto the button
 
 
-
-          for(let n = 0; n < 1; n++) {
             let $planningButton = $("<button>").addClass("commandButton");
             console.log(`${this.name}+ ${n}`);
             //Here is the jist of it - be careful when editing.
@@ -279,7 +278,7 @@ $(()=>{ //Start jQuery
             if(test1 === 0) { //Threaten a foe
               $planningButton.text(`${this.name} - Threaten: ${this.currentBattlefield.enemyList[i].name}`);
             } else {
-              $planningButton.text(`${this.name} - Strike: ${this.currentBattlefield.enemyList[i].name}`);
+              $planningButton.text(`${this.name} - Insult: ${this.currentBattlefield.enemyList[i].name}`);
             }
             $planningButton.on("click", function() {
               //Use a switch or if/else to select which function to 'store' here in a new button. WAY overthrought this one
@@ -294,7 +293,13 @@ $(()=>{ //Start jQuery
                   $combatButton.remove();
                 });//End the combat button definition
               } else {
-                addToCombatLog(`${buttonOwner.name} struck ${buttonOwner.currentBattlefield.enemyList[i].name}`);
+                addToCombatLog(`${buttonOwner.name} plans to insult ${buttonOwner.currentBattlefield.enemyList[i].name}`);
+                $combatButton.text(`Next action: ${buttonOwner.name}`)
+                $combatButton.on("click", function() {
+                  buttonOwner.fatigue += 5;
+                  $combatButton.next().css("display","block");
+                  $combatButton.remove();
+                });//End the combat button definition
                 buttonOwner.attack();
               }
               //TempName
@@ -608,6 +613,7 @@ $(()=>{ //Start jQuery
 
 
       //reset the round - temporary
+      clearCombatLog();
       addToCombatLog("TURN IS OVER")
       this.combatState = 1;
       this.currentPlayerCharacter = 0;
