@@ -31,10 +31,10 @@ $(()=>{ //Start jQuery
       this.totalEngagement = 0;
       this.overwhelmedState = 0; //0 -> no, 1 -> at limit, 2 -> Yes
 
-      this.fatigue = 80;
-      this.maxWounds = 80; //used to keep track of max fatigue
+      this.fatigue = 20;
+      this.maxWounds = 20; //used to keep track of max fatigue
 
-      this.damage = 8;
+      this.damage = 12;
       this.armor = 1;
 
       this.onesGroup;
@@ -584,52 +584,64 @@ $(()=>{ //Start jQuery
     // This one could get messy, depending how complicated combat becomes.
     resolveCombat() {
 
-      //Testing loops
-      // for( let i = 0; i < this.playerCharacterList.length; i++) {
-      //   console.log(`${this.playerCharacterList[i].name} attacks!`);
-      //   this.playerCharacterList[i].attack();
-      //
-      // }
-      // for( let i = 0; i < this.enemyList.length; i++) {
-      //   if(this.enemyList[i].aliveBool) {
-      //     console.log(`${this.enemyList[i].name} attacks!`);
-      //     this.enemyList[i].attack();
-      //
-      //   } else {
-      //     console.log(`${this.enemyList[i].name} does nothing`);
-      //   }
-      // }
+      //The buttons themselves are taking care of this for now - although this function should be used to arrange them in initiative order eventually.
 
-      //this.playerCharacterList[0].clearThreat();
-
-      //console.log("Done?");
-
-      //console.log(this.playerCharacterList[0].engagedFoes);
-      //console.log(this.enemyList[0].engagedFoes);
-      //console.log(this.enemyList[1].engagedFoes);
-      //actions/damage
-      //pause for button confirm
-      //roundCleanup()
-
-
-      //reset the round - temporary
       clearCombatLog();
-      addToCombatLog("TURN IS OVER")
-      this.combatState = 1;
-      this.currentPlayerCharacter = 0;
-      this.primePlayerTurn();
+
+      let deadFoes = 0;
+      for(let i = 0; i < this.enemyList.length; i++) {
+        if(!this.enemyList[i].aliveBool) {
+          deadFoes++;
+        }
+      }
+      if(deadFoes === this.enemyList.length) {
+        addToCombatLog("No foes remain");
+        this.combatCleanUp();
+      } else {
+        addToCombatLog("A new round begins")
+        this.combatState = 1;
+        this.currentPlayerCharacter = 0;
+        this.primePlayerTurn();
+      }
+
     }
 
     //
-    roundCleanUp() {
-      // (DONT) remove the fallen, reset menus, etc.
-      //Check for victory/defeat
+    combatCleanUp() {
+      console.log("cleanUp called");
 
-      //temporary
-      //document.getElementById("combatOverlay").style.display = "none";
+      //hide combat overlay
+      $("#combatOverlay").hide();
 
-      // primePlayerTurn();
-    }
+      //reset battlefield values to default state
+      this.combatState = 0;
+      this.currentPlayerCharacter = 0;
+      this.enemyList = [];
+      this.actionsRemaining = 0;
+      //Initiative lists = [];
+
+      //restore PCs stamina
+      for(let i = 0; i < this.playerCharacterList.length; i++) {
+        let currentPC = this.playerCharacterList[i];
+        currentPC.fatigue = currentPC.wounds;
+      }
+      //create new roll initiative button that calls startCombat()
+      let theBattlefield = this;
+      let $newInitButton = $("<button>").text("-Roll Initiative-");
+      $newInitButton.addClass("commandButton");
+      $newInitButton.on("click", function() {
+        addToCombatLog("Here we go again");
+        theBattlefield.startCombat();
+        this.remove();
+      });
+      $("#commandZone").append($newInitButton);
+
+      //Now update the html
+      this.updateHealthValues();
+      this.updateAttackArmorThreatValues();
+      this.createEnemyStatBlocks();
+
+    };
 
     //Draws the lines that indicate who threatens who - I'm glad this works, because the game REALLY needs them to make sense
     //These values will have to change with responsiveness...

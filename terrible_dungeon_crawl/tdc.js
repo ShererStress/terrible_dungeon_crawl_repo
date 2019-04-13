@@ -309,9 +309,10 @@ class GroupLocation {
     //causes the group to move
     this.changePosition(parseInt(this.currentDirections.shift()));
     //checks if the movement is complete - can probably put the 'goToCombat' trigger here to interrupt movement consistently
-    if(Math.random() > 0.9) {
+    if(Math.random() > 0.70) {
       this.currentDirections.length = 0;
       console.log("BATTLETIME");
+      $("#combatOverlay").show();
     }
     if(this.currentDirections.length > 0) {
       //using 'this' in a setTimeout refers to the window of the script... or something. The following allows the method to refer to the instantiation of the class, instead
@@ -621,7 +622,7 @@ class GroupLocation {
 
   displayMap(theParty.currentFloor.mapData);
 
-
+  $("#combatOverlay").hide();
 
 
 }); //End jQuery
