@@ -3,7 +3,7 @@ Characters can engage targets, automatically damaging the greatest threat each r
 Engaging too many foes causes the character to become overwhelmed, taking penalites until some foes have disengaged.
 
 Actions:
-Engage target (up to limit)
+Engage target (up to limit)  --- Working!
 Ability use
 Guard ally(redirects threat from attacker(s))
 Disengage/withdraw
@@ -15,7 +15,7 @@ convert to jQuery
 removing creatures is a bit more complex, as they exist in:
 every foe's engagement arrays
 ~initative order (s)
-~list of foes
+~list of foes --- Done!
 
 */
 
@@ -107,7 +107,10 @@ $(()=>{ //Start jQuery
     engageTarget(targetCreature, reciprocateBoolean = 0) {
       //Search list of engaged targets for the foe
       let enemyExists = false;
-
+      if(!targetCreature.aliveBool) {
+        addToCombatLog(`${targetCreature.name} is slain - ${this.name} did not bother  threatening it.`);
+        return;
+      }
       if(this.overwhelmedState >= 1 && reciprocateBoolean === 1) {
         console.log(`${this.name} can't threaten another foe - they are busy with their current targets!`);
         addToCombatLog(`${this.name} can't threaten another foe - they are busy with their current targets!`);
@@ -188,12 +191,15 @@ $(()=>{ //Start jQuery
 
     //Threatens the target, then attacks something.
     actionThreatenAttack(threatenTarget, threatenReciprocateBool) {
-      this.engageTarget(threatenTarget,threatenReciprocateBool);
+      if(this.aliveBool) {
+        this.engageTarget(threatenTarget,threatenReciprocateBool);
+        this.attack();
+      } else {
+        addToCombatLog(`${this.name} was slain before it could act.`)
+      }
 
-      this.attack();
       this.currentBattlefield.checkToEndTurn();
-
-    }
+    };
 
 
 
@@ -271,27 +277,28 @@ $(()=>{ //Start jQuery
             //Here is the jist of it - be careful when editing.
             let test1 = n;
             if(test1 === 0) { //Threaten a foe
-              $planningButton.text(`Threaten: ${this.currentBattlefield.enemyList[i].name}`);
+              $planningButton.text(`${this.name} - Threaten: ${this.currentBattlefield.enemyList[i].name}`);
             } else {
-              $planningButton.text(`Strike: ${this.currentBattlefield.enemyList[i].name}`);
+              $planningButton.text(`${this.name} - Strike: ${this.currentBattlefield.enemyList[i].name}`);
             }
             $planningButton.on("click", function() {
               //Use a switch or if/else to select which function to 'store' here in a new button. WAY overthrought this one
-              let $combatButton = $("<button>").addClass("commandButton");
+              let $combatButton = $("<button>").addClass("combatButton");
               if(test1 === 0) { //Threaten a foe
                 addToCombatLog(`${buttonOwner.name} is planning to threaten ${buttonOwner.currentBattlefield.enemyList[i].name}`);
                 //create a new button here:
                 $combatButton.text(`Next action: ${buttonOwner.name}`)
                 $combatButton.on("click", function() {
                   buttonOwner.actionThreatenAttack(buttonOwner.currentBattlefield.enemyList[i],1);
-                  //buttonOwner.currentBattlefield.drawThreatLines();
+                  $combatButton.next().css("display","block");
+                  $combatButton.remove();
                 });//End the combat button definition
               } else {
                 addToCombatLog(`${buttonOwner.name} struck ${buttonOwner.currentBattlefield.enemyList[i].name}`);
                 buttonOwner.attack();
               }
-
-              $("#enemyZone").append($combatButton);
+              //TempName
+              $("#commandListTwo").append($combatButton);
 
               $(`#enemy${i}Block`).css("border-color","#5e5542");
               $(`#pc${pcID}Block`).css("border-color","#5e5542");
@@ -525,6 +532,7 @@ $(()=>{ //Start jQuery
     //Whenever the player finishes selecting what to do on a turn, this should be called to move combat forward. Calls 'enemyTurn()' once all player characters have selected actions.
     playerTurnComplete() {
       if(this.combatState === 2) {
+        $("#commandList").empty();
         this.enemyTurn();
       } else {
         this.primePlayerTurn();
@@ -538,17 +546,22 @@ $(()=>{ //Start jQuery
           //This won't avoid selecting dead adventurers - update!
           let targetChoice = Math.floor(Math.random()*this.playerCharacterList.length);
 
-          let $combatButton = $("<button>").addClass("commandButton");
+          let $combatButton = $("<button>").addClass("combatButton");
           addToCombatLog(`${this.enemyList[i].name} is planning to threaten ${this.playerCharacterList[targetChoice].name}`);
           $combatButton.text(`Next Action: ${this.enemyList[i].name}`);
           let buttonsBattlefield = this;
-            $combatButton.on("click", function() {
-              buttonsBattlefield.enemyList[i].actionThreatenAttack(buttonsBattlefield.playerCharacterList[targetChoice],1);
-            });
-          $("#enemyZone").append($combatButton);
+          $combatButton.on("click", function() {
+            buttonsBattlefield.enemyList[i].actionThreatenAttack(buttonsBattlefield.playerCharacterList[targetChoice],1);
+            $combatButton.next().css("display","block");
+            $combatButton.remove();
+          });
+          $("#commandListTwo").append($combatButton);
           this.actionsRemaining++;
         }
       }
+
+      //This will have to be moved. Run once all commands are in place.
+      $("#commandListTwo").children().eq(0).css("display","block")
     };
 
     checkToEndTurn() {
