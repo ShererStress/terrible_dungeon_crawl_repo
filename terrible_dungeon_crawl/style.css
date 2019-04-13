@@ -29,9 +29,8 @@ button {
   outline: none;
   font-family: 'Press Start 2P', cursive;
   font-size: 8px;
+  padding: 4px;
 }
-
-
 
 section {
 
@@ -42,14 +41,15 @@ sectionCombat {
 }
 
 #commandZone{
-  background-color: blue;
+  background-color: #404959;
   width: 200px;
+  border-right: 3px solid #5e5542;
 }
 
 #playerCharacterZone {
   height: 100%;
   width: 250px;
-  background-color: green;
+  background-color: #404959;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -67,7 +67,7 @@ svg {
 }
 
 #enemyZone {
-  background-color: red;
+  background-color: #404959;
   width: 250px;
   display: flex;
   flex-direction: column;
@@ -80,8 +80,14 @@ ul {
   margin: 0;
 }
 
+#combatLog {
+  /* height: 100px; */
+  overflow: auto;
+}
+
 li {
   width: 100%;
+  list-style: none;
 }
 
 .commandButton{
@@ -123,7 +129,7 @@ div {
   display: flex;
 }
 
-#combatLog {
+#combatLogDiv {
   background-color: #e5c990;
   border: 3px solid #5e5542;
   width: 1000px;
@@ -178,14 +184,12 @@ bar {
 .woundBar {
   background-color: #db3618;
   height: 20px;
-  /* width: 90%; */
   display: flex;
 }
 
 .fatigueBar {
   background-color: green;
   height: 20px;
-  /* width: 70%; */
 }
 
 
@@ -205,17 +209,10 @@ modal {
   z-index: 2;
 }
 
-button {
-  padding: 4px;
-}
-
 
 .menuButtons:hover{
   background: rgba(100, 100, 100, .6);
 }
-
-
-
 
 
 /* Gameplay rendering elements for the map*/
@@ -260,7 +257,7 @@ roomDiv {
 .explorable {
   background-color: grey;
   border: 10px solid black;
-  font-size: 30px;
+  font-size: 36px;
 }
 
 .explored {

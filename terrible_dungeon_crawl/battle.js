@@ -1,13 +1,13 @@
 /*
-Characters can engage targets, automatically damaging them each round. Damage is split among targets (inconsistent distribution).
+Characters can engage targets, automatically damaging the greatest threat each round.
 Engaging too many foes causes the character to become overwhelmed, taking penalites until some foes have disengaged.
 
 Actions:
 Engage target (up to limit)
 Ability use
-Guard (redirects all new attackers)
+Guard ally(redirects threat from attacker(s))
 Disengage/withdraw
-Shift stance
+Shift stance(STRETCH)
 
 // todo:
 convert to jQuery
@@ -16,11 +16,6 @@ removing creatures is a bit more complex, as they exist in:
 every foe's engagement arrays
 ~initative order (s)
 ~list of foes
-
-Get this into the html, not too far off, honestly
-elements to display everything
-a button to select which foe to focus
-everything else should still be automated at this point
 
 */
 
@@ -39,7 +34,7 @@ $(()=>{ //Start jQuery
       this.fatigue = 80;
       this.maxWounds = 80; //used to keep track of max fatigue
 
-      this.damage = 5;
+      this.damage = 8;
       this.armor = 1;
 
       this.onesGroup;
@@ -52,7 +47,11 @@ $(()=>{ //Start jQuery
     //Do some damage. By default, this is applied to something in the array of engaged foes.
     //Getting an undefined error? Make some notArray -> array code
     attack(targetList = this.engagedFoes) {
-
+      if(targetList.length === 0) {
+        addToCombatLog(`${this.name} was not threatening any foes, and made no attack.`);
+        console.log(`${this.name} was not threatening any foes, and made no attack.`);
+        return;
+      }
       let totalDamage = this.calculateDamage();
       //Pick a target - new function?
       let possibleTargetArray = [];
@@ -71,12 +70,13 @@ $(()=>{ //Start jQuery
       let selectedTargetIndex = possibleTargetArray[Math.floor(Math.random()*possibleTargetArray.length)];
 
       let target = targetList[selectedTargetIndex][0];
+      addToCombatLog(`${this.name} attacked ${target.name}!`)
       target.takeDamage(totalDamage);
     };
 
     calculateDamage() {
       //let damageModifier = this.engagementThreshold - ;
-      return(this.damage - this.totalEngagement);
+      return(Math.max(this.damage - this.totalEngagement,1));
     }
 
     takeDamage(incomingDamage) {
@@ -91,6 +91,7 @@ $(()=>{ //Start jQuery
         this.clearThreat();
         this.currentBattlefield.drawThreatLines()
       }
+      addToCombatLog(`${this.name} took ${damageTaken} damage!`)
       return(damageTaken);
     };
 
@@ -102,18 +103,21 @@ $(()=>{ //Start jQuery
       return(effectiveArmor);
     }
 
+    //Adds the target to this creature's list of threatened foes, or increases it's threat level for that creature if it is already there
     engageTarget(targetCreature, reciprocateBoolean = 0) {
       //Search list of engaged targets for the foe
       let enemyExists = false;
 
       if(this.overwhelmedState >= 1 && reciprocateBoolean === 1) {
-        console.log(`${this.name} can't attack another foe - they are busy with their current targets!`);
+        console.log(`${this.name} can't threaten another foe - they are busy with their current targets!`);
+        addToCombatLog(`${this.name} can't threaten another foe - they are busy with their current targets!`);
       } else {
         for(let i =0; i < this.engagedFoes.length; i++) {
           if(this.engagedFoes[i].indexOf(targetCreature) === 0) {
             this.engagedFoes[i][1]++;
             if(reciprocateBoolean === 1) {
-              console.log(`${this.name} focused the attack against ${targetCreature.name}`);
+              console.log(`${this.name} pressed the attack against ${targetCreature.name}`);
+              addToCombatLog(`${this.name} pressed the attack against ${targetCreature.name}`);
             }
             enemyExists = true;
           }
@@ -122,6 +126,7 @@ $(()=>{ //Start jQuery
           this.engagedFoes.push([targetCreature,1]);
           if(reciprocateBoolean === 1) {
             console.log(`${this.name} moved to attack ${targetCreature.name}`);
+            addToCombatLog(`${this.name} moved to attack ${targetCreature.name}`);
           }
         }
 
@@ -135,6 +140,7 @@ $(()=>{ //Start jQuery
         if(reciprocateBoolean) {
           targetCreature.engageTarget(this);
         }
+        this.currentBattlefield.drawThreatLines();
       }
     };
 
@@ -178,6 +184,20 @@ $(()=>{ //Start jQuery
       console.log(`${this.fatigue}/${this.maxWounds}`);
     };
 
+    //Combat Action list - calls other methods in correct combinations for combat to flow correctly. Called by the combatButtons!
+
+    //Threatens the target, then attacks something.
+    actionThreatenAttack(threatenTarget, threatenReciprocateBool) {
+      this.engageTarget(threatenTarget,threatenReciprocateBool);
+
+      this.attack();
+      this.currentBattlefield.checkToEndTurn();
+
+    }
+
+
+
+
   } //End of Creature class
 
   class Adventurer extends Creature {
@@ -215,12 +235,10 @@ $(()=>{ //Start jQuery
       console.log(`${this.fatigue}/${this.wounds}/${this.maxWounds}`);
     };
 
-    //Same as the creatures, but allows the combat flow to continue
+    //Same as the creatures, but allows the combat flow to continue.
+
     engageTarget(targetCreature, reciprocateBoolean = 0) {
       super.engageTarget(targetCreature, reciprocateBoolean);
-      if(reciprocateBoolean === 1) {
-        this.currentBattlefield.playerTurnComplete();
-      }
     };
 
 
@@ -228,6 +246,7 @@ $(()=>{ //Start jQuery
     // Methods for interacting with Battlefield and PlayerGroup classes
 
     //call this once on character generation to generate arrays for making buttons in combat. Organize this stuff WELL
+    //May not need this, depending how things get implemented in displayTurnOptions()
     makeCombatOptionsObjects() {
       //Object - Engage Target buttons (4?), when displayed, only show a number equal to the number of foes. Each button is keyed to an index in the enemy array, as opposed to a specific enemy instantiation.
     };
@@ -237,23 +256,59 @@ $(()=>{ //Start jQuery
       console.log("generating options");
       $("#commandList").empty();
       let buttonOwner = this;
+      let pcID = this.battlefieldId.slice(-1); //Just get the number
 
-      //If target=enemy
+      //If target=single enemy actions (threaten, ability use, disengage)
       for(let i = 0; i < this.currentBattlefield.enemyList.length; i++) {
-        if(this.currentBattlefield.enemyList[i].aliveBool) {
+        if(this.currentBattlefield.enemyList[i].aliveBool) { //Only make buttons pertaining to those still in combat - this allows others to ignore the dead
           //use a switch here to select which function to tack onto the button
-          let $newButton = $("<button>").text(`Threaten: ${this.currentBattlefield.enemyList[i].name}`);
-          $newButton.addClass("commandButton");
-          $newButton.on("click", function() {
-            buttonOwner.engageTarget(buttonOwner.currentBattlefield.enemyList[i],1);
-          });
-          $newButton.on("mouseenter", function() {
-            $(`#enemy${i}Block`).css("border-color","blue");
-          });
-          $newButton.on("mouseleave", function() {
-            $(`#enemy${i}Block`).css("border-color","#5e5542");
-          });
-          $("#commandList").append($newButton)
+
+
+
+          for(let n = 0; n < 1; n++) {
+            let $planningButton = $("<button>").addClass("commandButton");
+            console.log(`${this.name}+ ${n}`);
+            //Here is the jist of it - be careful when editing.
+            let test1 = n;
+            if(test1 === 0) { //Threaten a foe
+              $planningButton.text(`Threaten: ${this.currentBattlefield.enemyList[i].name}`);
+            } else {
+              $planningButton.text(`Strike: ${this.currentBattlefield.enemyList[i].name}`);
+            }
+            $planningButton.on("click", function() {
+              //Use a switch or if/else to select which function to 'store' here in a new button. WAY overthrought this one
+              let $combatButton = $("<button>").addClass("commandButton");
+              if(test1 === 0) { //Threaten a foe
+                addToCombatLog(`${buttonOwner.name} is planning to threaten ${buttonOwner.currentBattlefield.enemyList[i].name}`);
+                //create a new button here:
+                $combatButton.text(`Next action: ${buttonOwner.name}`)
+                $combatButton.on("click", function() {
+                  buttonOwner.actionThreatenAttack(buttonOwner.currentBattlefield.enemyList[i],1);
+                  //buttonOwner.currentBattlefield.drawThreatLines();
+                });//End the combat button definition
+              } else {
+                addToCombatLog(`${buttonOwner.name} struck ${buttonOwner.currentBattlefield.enemyList[i].name}`);
+                buttonOwner.attack();
+              }
+
+              $("#enemyZone").append($combatButton);
+
+              $(`#enemy${i}Block`).css("border-color","#5e5542");
+              $(`#pc${pcID}Block`).css("border-color","#5e5542");
+              //This character's turn is planned, move onto the next one
+              buttonOwner.currentBattlefield.playerTurnComplete();
+            }); //End 'on click' for planningButton
+
+            $planningButton.on("mouseenter", function() {
+              $(`#enemy${i}Block`).css("border-color","blue");
+              $(`#pc${pcID}Block`).css("border-color","blue");
+            });
+            $planningButton.on("mouseleave", function() {
+              $(`#enemy${i}Block`).css("border-color","#5e5542");
+              $(`#pc${pcID}Block`).css("border-color","#5e5542");
+            });
+            $("#commandList").append($planningButton)
+          }
         }
       }
 
@@ -274,16 +329,6 @@ $(()=>{ //Start jQuery
 
         return;
       }
-      // $("#testButton").on("click", function() {
-      //   for(let i = 0; i < buttonOwner.currentBattlefield.enemyList.length; i++) {
-      //     if(buttonOwner.currentBattlefield.enemyList[i].aliveBool) {
-      //
-      //
-      //     }
-      //   }
-      //
-      // });
-
     };
 
 
@@ -322,6 +367,8 @@ $(()=>{ //Start jQuery
       this.enemyList = [];
 
       this.initiativeList = [];
+
+      this.actionsRemaining = 0;
 
     }
 
@@ -472,6 +519,7 @@ $(()=>{ //Start jQuery
       }
 
       this.playerCharacterList[this.currentPlayerCharacter-1].displayTurnOptions();
+      this.actionsRemaining++;
     }
 
     //Whenever the player finishes selecting what to do on a turn, this should be called to move combat forward. Calls 'enemyTurn()' once all player characters have selected actions.
@@ -483,39 +531,56 @@ $(()=>{ //Start jQuery
       }
     }
 
-    //Decides what the enemies do. Probably random for the most part, for my sake. Calls resolve combat once done (or primes a button to do so).
+    //Decides what the enemies do. Probably random for the most part, for my sake. Creates a button that executes the enemy's action when clicked by the player. For now, only engages the PCs.
     enemyTurn() {
       for( let i = 0; i < this.enemyList.length; i++) {
         if(this.enemyList[i].aliveBool) {
-          this.enemyList[i].engageTarget(this.playerCharacterList[0],1);
+          //This won't avoid selecting dead adventurers - update!
+          let targetChoice = Math.floor(Math.random()*this.playerCharacterList.length);
+
+          let $combatButton = $("<button>").addClass("commandButton");
+          addToCombatLog(`${this.enemyList[i].name} is planning to threaten ${this.playerCharacterList[targetChoice].name}`);
+          $combatButton.text(`Next Action: ${this.enemyList[i].name}`);
+          let buttonsBattlefield = this;
+            $combatButton.on("click", function() {
+              buttonsBattlefield.enemyList[i].actionThreatenAttack(buttonsBattlefield.playerCharacterList[targetChoice],1);
+            });
+          $("#enemyZone").append($combatButton);
+          this.actionsRemaining++;
         }
       }
+    };
 
-      this.resolveCombat();
+    checkToEndTurn() {
+      this.actionsRemaining--;
+      if(this.actionsRemaining <= 0) {
+        this.actionsRemaining = 0;
+        this.resolveCombat();
+      }
     }
+
+
 
     //Now everything acts based on initative order.
     //Display the buttons that were made during the player's turn one at a time, each moves combat forward one turn with the correct action
     // This one could get messy, depending how complicated combat becomes.
     resolveCombat() {
 
-      fightOne.drawThreatLines();
-
-      for( let i = 0; i < this.playerCharacterList.length; i++) {
-        console.log(`${this.playerCharacterList[i].name} attacks!`);
-        this.playerCharacterList[i].attack();
-
-      }
-      for( let i = 0; i < this.enemyList.length; i++) {
-        if(this.enemyList[i].aliveBool) {
-          console.log(`${this.enemyList[i].name} attacks!`);
-          this.enemyList[i].attack();
-
-        } else {
-          console.log(`${this.enemyList[i].name} does nothing`);
-        }
-
-      }
+      //Testing loops
+      // for( let i = 0; i < this.playerCharacterList.length; i++) {
+      //   console.log(`${this.playerCharacterList[i].name} attacks!`);
+      //   this.playerCharacterList[i].attack();
+      //
+      // }
+      // for( let i = 0; i < this.enemyList.length; i++) {
+      //   if(this.enemyList[i].aliveBool) {
+      //     console.log(`${this.enemyList[i].name} attacks!`);
+      //     this.enemyList[i].attack();
+      //
+      //   } else {
+      //     console.log(`${this.enemyList[i].name} does nothing`);
+      //   }
+      // }
 
       //this.playerCharacterList[0].clearThreat();
 
@@ -530,6 +595,7 @@ $(()=>{ //Start jQuery
 
 
       //reset the round - temporary
+      addToCombatLog("TURN IS OVER")
       this.combatState = 1;
       this.currentPlayerCharacter = 0;
       this.primePlayerTurn();
@@ -564,7 +630,7 @@ $(()=>{ //Start jQuery
             //1red3   1/1-red
             //2red9 - 1tan3   1/2-tan 2/2 red
             //3red15 - 2tan9 - 1red3   1/3 red  2/3tan 3/3red
-            let lineWidth = (6*k-3); //Each line is 3px wide
+            let lineWidth = 2*(2*k-1); //Each line is 2px wide
             let lineColor;
             if((threatAmount+k)%2 === 0) { //even -> red
               lineColor = "rgb(255,0,0)";
@@ -627,7 +693,7 @@ $(()=>{ //Start jQuery
           let quakeData = data.features[Math.floor(Math.random()*data.features.length)].properties.mag;
 
           //send the data somewhere
-          $("#combatLog").text(`Found some earthquake data: ${quakeData}`);
+          addToCombatLog(`Found some earthquake data: ${quakeData}`);
         },
         ()=>{
           console.log('bad request');
@@ -643,9 +709,17 @@ $(()=>{ //Start jQuery
 
   //////Global functions
 
+  function addToCombatLog(textIn) {
+    let $newListElement = $("<li>").text(`${textIn}`);
+    $("#combatLogDiv").append($newListElement);
+    if($("#combatLogDiv").children().length > 8) {
+      $("#combatLogDiv").children().eq(0).remove();
+    }
+  }
 
-
-
+  function clearCombatLog() {
+    $("#combatLogDiv").empty();
+  }
 
 
   //////
@@ -685,11 +759,8 @@ $(()=>{ //Start jQuery
 
   quake.getExternalData();
 
-  //Test API functionality
 
-
-
-
+  // $("#combatOverlay").css("display","none");
 
 
 
