@@ -82,8 +82,6 @@ let mapPrototype6 = [
 
 
 
-
-
 //////CLASSES
 
 //Data and methods for a single floor
@@ -311,6 +309,10 @@ class GroupLocation {
     //causes the group to move
     this.changePosition(parseInt(this.currentDirections.shift()));
     //checks if the movement is complete - can probably put the 'goToCombat' trigger here to interrupt movement consistently
+    if(Math.random() > 0.9) {
+      this.currentDirections.length = 0;
+      console.log("BATTLETIME");
+    }
     if(this.currentDirections.length > 0) {
       //using 'this' in a setTimeout refers to the window of the script... or something. The following allows the method to refer to the instantiation of the class, instead
       let theGroup = this;
@@ -371,9 +373,9 @@ class GroupLocation {
   function displayMap(arrayIn) {
     //'mapZone' is the grid the buttons are fit into.
     let $map = $("#mapZone");
-    //Change these to rescale maps if it gets too big - remember to consider the effects of the borders!
-    $map.css("height", `${4+(arrayIn.length)*80}px`);
-    $map.css("width",`${4+(arrayIn[0].length)*80}px`);
+
+
+
 
     for(let i = 0; i < arrayIn.length; i++) {
       for(let j = 0; j < arrayIn[i].length; j++) {
@@ -415,6 +417,18 @@ class GroupLocation {
         });
       }
     }//end loops
+
+    //Change these to rescale maps if it gets too big - remember to consider the effects of the borders!
+
+    let roomSize = 40;
+
+    $map.css("height", `${4+(arrayIn.length)*roomSize}px`);
+    $map.css("width",`${4+(arrayIn[0].length)*roomSize}px`);
+
+    let $rooms = $(".roomButton")
+    $rooms.css("width", `${roomSize}px`);
+    $rooms.css("height", `${roomSize}px`);
+
   };
 
   //This is bad to use each refresh, but will work given the size
