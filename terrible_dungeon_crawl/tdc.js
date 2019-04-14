@@ -23,12 +23,10 @@ $("#closeHelpButton").on("click", hideHelp);
 let mapPrototype = [
   [1,1,1,1,1],
   [0,0,1,0,1],
-  [0,1,1,1,1],
+  [0,1,"1AB",1,1],
   [0,1,1,0,1],
   [0,1,0,1,1]
 ];
-
-console.log((4).toString());
 
 let mapPrototype2 = [
   [1,1,1,1,1,1],
@@ -114,15 +112,29 @@ class FloorData {
     }
     for(let i = 0; i < mapHeight; i ++) {
       for(let j = 0; j < mapWidth; j ++) {
+        let roomContents = new Object;
+        if(Number.isInteger(mapDataIn[i][j])) {
+          this.mapData[i][j] = [mapDataIn[i][j],-1,-1,-1,-1,roomContents];
+        } else {
+          let roomData = mapDataIn[i][j];
+          let roomDataArray = roomData.split("");
+          this.mapData[i][j] = [mapDataIn[i][j],-1,-1,-1,-1,roomContents];
+          while(roomDataArray.length > 0) {
+            roomContents[roomDataArray[0]] = roomDataArray[1];
+            roomDataArray.shift().shift();
+          }
+        }
+
+        roomContents.roomId = (i*mapWidth+j);
+        console.log(roomContents);
         //Get info from prototype/simple map here!
         /*
-        let roomData = mapDataIn[i][j];
-        let roomDataArray = roomData.split("");
+
 
         let roomState = partseInt(roomDataArray.shift());
         */
 
-        this.mapData[i][j] = [mapDataIn[i][j],-1,-1,-1,-1];
+        //this.mapData[i][j] = [mapDataIn[i][j],-1,-1,-1,-1];
       }
     }
 
