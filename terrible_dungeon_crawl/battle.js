@@ -31,7 +31,7 @@ $(()=>{ //Start jQuery
       this.totalEngagement = 0;
       this.overwhelmedState = 0; //0 -> no, 1 -> at limit, 2 -> Yes
 
-      this.fatigue = 20;
+      this.fatigue = 80;
       this.maxWounds = 20; //used to keep track of max fatigue
 
       this.damage = 12;
@@ -88,8 +88,8 @@ $(()=>{ //Start jQuery
         $(`#${this.battlefieldId}Block`).css("backgroundColor", "#4f2b2b");
         $(`#${this.battlefieldId}Block`).css("border-color","#5e5542");
         this.aliveBool = false;
-        this.clearThreat();
-        this.currentBattlefield.drawThreatLines()
+        this.clearAllThreat();
+        this.currentBattlefield.drawThreatLines();
       }
       addToCombatLog(`${this.name} took ${damageTaken} damage!`)
       return(damageTaken);
@@ -165,23 +165,64 @@ $(()=>{ //Start jQuery
       this.currentBattlefield.updateAttackArmorThreatValues();
     };
 
-    //Loops through this creature's threat array and removes itself from other creates threat lists. Then deletes this creates threat list. Used in case of retreat or death.
-    //this.engagedFoes.push([targetCreature,1]);
-    clearThreat() {
-      for (let i = 0; i < this.engagedFoes.length; i++) {
+    //Loops through this creature's threat array and removes itself from other creatures' threat lists. Then deletes this creature's threat list. Used in case of withdraw or death.
+    clearAllThreat() {
+      console.log(`removing all threat from ${this.name}`);
+
+      while(this.engagedFoes.length > 0) {
+        console.log("Clearing another: "+ this.engagedFoes.length);
+        this.clearSingleThreat(this.engagedFoes[0][0]);
+      }
+      /*
+      for (let i = this.engagedFoes.length-1; i >= 0; i--) {
         let currentCreature = this.engagedFoes[i][0];
-        let currentCreatureThreatList = this.engagedFoes[i][0].engagedFoes;
-        for (let j = 0; j < currentCreatureThreatList.length; j++) {
-          if(currentCreatureThreatList[j][0] === this) {
-            currentCreatureThreatList.splice(j,1);
-            currentCreature.updateTotalEngagement()
-          }
+        console.log(`Next to remove from ${this.name}:  ${currentCreature.name}`);
+        currentCreature.clearSingleThreat(this, i);
+      }
+      */
+      console.log(`Cleared ${this.name}'s list`);
+      console.log(`${this.engagedFoes}`);
+      //this.engagedFoes.splice(0,this.engagedFoes.length);
+
+      this.updateTotalEngagement();
+      this.currentBattlefield.drawThreatLines();
+    };
+
+    //Removes this creature from a single foe's threat list, and this from the foe's list.
+    clearSingleThreat(targetCreature, startIndex) {
+      console.log(`Single part 1: removing threat on ${targetCreature.name} due to ${this.name}`);
+      let targetCreatureThreatList = targetCreature.engagedFoes;
+      for (let j = 0; j < targetCreatureThreatList.length; j++) {
+        if(targetCreatureThreatList[j][0] === this) {
+          targetCreatureThreatList.splice(j,1);
+          targetCreature.updateTotalEngagement();
         }
       }
-      this.engagedFoes.splice(0,this.engagedFoes.length);
+
+      console.log(`Single part 2: removing threat on ${this.name} due to ${targetCreature.name}`);
+      for (let j = 0; j < this.engagedFoes.length; j++) {
+        if(this.engagedFoes[j][0] === targetCreature) {
+          this.engagedFoes.splice(j,1);
+        }
+      }
+
       this.updateTotalEngagement();
-      console.log(`Cleared ${this.name}'s list`);
-    }
+      this.currentBattlefield.drawThreatLines();
+    };
+
+    //remove single threateningTarget
+    //from this.threatList due to enemy
+
+
+
+
+
+    //remove all
+    //while(this.listSize > 0)
+    //remove single threateningTarget, at array[0]
+    //array.shift();
+
+
 
     logHealth() {
       console.log(`${this.fatigue}/${this.maxWounds}`);
@@ -197,11 +238,18 @@ $(()=>{ //Start jQuery
       } else {
         addToCombatLog(`${this.name} was slain before it could act.`)
       }
-
       this.currentBattlefield.checkToEndTurn();
     };
 
-
+    actionDisengage(targetCreature) {
+      if(this.aliveBool) {
+        addToCombatLog(`${this.name} moved away from ${targetCreature.name}.`)
+        this.clearSingleThreat(targetCreature);
+      } else {
+        addToCombatLog(`${this.name} was slain before it could act.`)
+      }
+      this.currentBattlefield.checkToEndTurn();
+    }
 
 
   } //End of Creature class
@@ -265,7 +313,7 @@ $(()=>{ //Start jQuery
       let pcID = this.battlefieldId.slice(-1); //Just get the number
 
       //If target=single enemy actions (threaten, ability use, disengage)
-      for(let n = 0; n < 1; n++) { //Increase to allow for more action types
+      for(let n = 0; n < 2; n++) { //Increase to allow for more action types
         for(let i = 0; i < this.currentBattlefield.enemyList.length; i++) {
           if(this.currentBattlefield.enemyList[i].aliveBool) { //Only make buttons pertaining to those still in combat - this allows others to ignore the dead
             //use a switch here to select which function to tack onto the button
@@ -278,7 +326,7 @@ $(()=>{ //Start jQuery
             if(test1 === 0) { //Threaten a foe
               $planningButton.text(`${this.name} - Threaten: ${this.currentBattlefield.enemyList[i].name}`);
             } else {
-              $planningButton.text(`${this.name} - Insult: ${this.currentBattlefield.enemyList[i].name}`);
+              $planningButton.text(`${this.name} - Disengage: ${this.currentBattlefield.enemyList[i].name}`);
             }
             $planningButton.on("click", function() {
               //Use a switch or if/else to select which function to 'store' here in a new button. WAY overthrought this one
@@ -292,15 +340,14 @@ $(()=>{ //Start jQuery
                   $combatButton.next().css("display","block");
                   $combatButton.remove();
                 });//End the combat button definition
-              } else {
-                addToCombatLog(`${buttonOwner.name} plans to insult ${buttonOwner.currentBattlefield.enemyList[i].name}`);
+              } else if (test1 === 1 ){
+                addToCombatLog(`${buttonOwner.name} plans to disengage from ${buttonOwner.currentBattlefield.enemyList[i].name}`);
                 $combatButton.text(`Next action: ${buttonOwner.name}`)
                 $combatButton.on("click", function() {
-                  buttonOwner.fatigue += 5;
+                  buttonOwner.actionDisengage(buttonOwner.currentBattlefield.enemyList[i]);
                   $combatButton.next().css("display","block");
                   $combatButton.remove();
                 });//End the combat button definition
-                buttonOwner.attack();
               }
               //TempName
               $("#commandListTwo").append($combatButton);
@@ -384,6 +431,16 @@ $(()=>{ //Start jQuery
 
     }
 
+
+
+
+
+
+
+
+
+
+
     /*
     function order:
     startCombat() -> Looped(primePlayerTurn() <-> playerTurnComplete())
@@ -397,7 +454,7 @@ $(()=>{ //Start jQuery
 
       //loop for more foes
       let numberOfFoes = Math.floor(Math.random()*3)+1;
-      for (let i = 0; i < numberOfFoes; i++) {
+      for (let i = 0; i < 2; i++) {
         let newEnemy = new Creature(`RUNELORD${i+1}`);
         this.enemyList.push(newEnemy);
       }
@@ -659,7 +716,7 @@ $(()=>{ //Start jQuery
 
       }); //End leaveBattleButton on click
 
-        $("#commandZone").append($leaveBattleButton);
+      $("#commandZone").append($leaveBattleButton);
 
     };
 
@@ -745,6 +802,7 @@ $(()=>{ //Start jQuery
 
           //send the data somewhere
           addToCombatLog(`Found some earthquake data: ${quakeData}`);
+          addToCombatLog("I will use it eventually, I promise!");
         },
         ()=>{
           console.log('bad request');
