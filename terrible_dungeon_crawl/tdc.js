@@ -23,13 +23,13 @@ $("#closeHelpButton").on("click", hideHelp);
 let mapPrototype = [
   [1,1,1,1,1],
   [0,0,1,0,1],
-  [0,1,"1AB",1,1],
+  [0,1,1,1,1],
   [0,1,1,0,1],
-  [0,1,0,1,1]
+  [0,1,0,"1S1",1]
 ];
 
 let mapPrototype2 = [
-  [1,1,1,1,1,1],
+  ["1S0",1,1,1,1,1],
   [0,0,1,0,1,0],
   [0,1,1,1,1,1],
   [0,1,1,0,1,0],
@@ -94,7 +94,7 @@ class FloorData {
 
   constructor (nameIn, mapDataIn) {
     this.name = nameIn;
-    //this.mapData -> [roominfo, upper, right, bottom, left]
+    //this.mapData -> [roominfo, upper, right, bottom, left, contents]
     //roomInfo -> 0/notARoom 1/hidden 2/explorable 3/explored 4/current
     //If this is expanded, check other functions so they don't break! (pathGenerator,)
     this.generateMap(mapDataIn);
@@ -118,23 +118,14 @@ class FloorData {
         } else {
           let roomData = mapDataIn[i][j];
           let roomDataArray = roomData.split("");
-          this.mapData[i][j] = [mapDataIn[i][j],-1,-1,-1,-1,roomContents];
+          this.mapData[i][j] = [parseInt(roomDataArray.shift()),-1,-1,-1,-1,roomContents];
           while(roomDataArray.length > 0) {
-            roomContents[roomDataArray[0]] = roomDataArray[1];
-            roomDataArray.shift().shift();
+            roomContents[`${roomDataArray.shift()}`] = roomDataArray.shift();
           }
         }
-
         roomContents.roomId = (i*mapWidth+j);
         console.log(roomContents);
-        //Get info from prototype/simple map here!
-        /*
 
-
-        let roomState = partseInt(roomDataArray.shift());
-        */
-
-        //this.mapData[i][j] = [mapDataIn[i][j],-1,-1,-1,-1];
       }
     }
 
@@ -413,6 +404,9 @@ class GroupLocation {
           if(arrayIn[i][j][0] === 1) { //The room is black
             $newSquare.addClass("hidden");
           }
+          if(Object.keys(arrayIn[i][j][5]).length > 1) { //The room has something in it
+            $newSquare.text(`${Object.keys(arrayIn[i][j][5])[0]}`);
+          }
           if(arrayIn[i][j][0] === 2) { //The room is grey, and reachable
             $newSquare.addClass("explorable");
             $newSquare.text("?");
@@ -435,6 +429,8 @@ class GroupLocation {
           if(arrayIn[i][j][4] === 1) {
             $newSquare.addClass("leftDoor");
           }
+
+
         }
         $map.append($newSquare);
         //currently calls the moveToLocation method for the group - change this if the buttons wind up doing something else!
