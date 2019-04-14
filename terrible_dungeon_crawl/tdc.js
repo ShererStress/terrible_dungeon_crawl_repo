@@ -25,15 +25,15 @@ let mapPrototype = [
   [0,0,1,0,1],
   [0,1,1,1,1],
   [0,1,1,0,1],
-  [0,1,0,"1S1",1]
+  [0,1,0,"1S2",1]
 ];
 
 let mapPrototype2 = [
-  ["1S0",1,1,1,1,1],
+  [1,1,1,1,1,1],
   [0,0,1,0,1,0],
   [0,1,1,1,1,1],
   [0,1,1,0,1,0],
-  [0,1,0,1,1,0]
+  [0,"1S0",0,1,1,0]
 ];
 
 let mapPrototype3 = [
@@ -94,6 +94,8 @@ class FloorData {
 
   constructor (nameIn, mapDataIn) {
     this.name = nameIn;
+    this.level;
+
     //this.mapData -> [roominfo, upper, right, bottom, left, contents]
     //roomInfo -> 0/notARoom 1/hidden 2/explorable 3/explored 4/current
     //If this is expanded, check other functions so they don't break! (pathGenerator,)
@@ -201,8 +203,10 @@ class FloorData {
 
 //A marker for the location of the group/party. No stats; just movement and display related functionality here.
 class GroupLocation {
-  constructor(currentFloorIn, startLocationRow, startLocationCol) {
-    this.currentFloor = currentFloorIn;
+  constructor(towerIn, startLocationRow, startLocationCol) {
+    this.currentTower = towerIn;
+    this.currentFloor = towerIn.floorList[0];
+    this.currentFloorLevel  = 0;
     this.rowLocation = startLocationRow;
     this.colLocation = startLocationCol;
     //this.currentFloor.showMap();
@@ -211,6 +215,7 @@ class GroupLocation {
 
     this.currentDirections = [];
     this.movingBool = false;
+    displayMap(this.currentFloor.mapData);
   }
 
   //Returns length 4 array of booleans for possible movement based on the group's current location. [up, right, down, left]. This needs to be run after each movement, as it shows new rooms!
@@ -284,7 +289,7 @@ class GroupLocation {
     }
     //Update these to check for where the group can move next!
     this.directionOptions = this.checkMovementOptions();
-    clearMap();
+    //clearMap();
     displayMap(this.currentFloor.mapData);
 
     //run room-based events here!
@@ -298,9 +303,16 @@ class GroupLocation {
       return;
     }
     //No movement necissary
+    let currentLocation = this.currentFloor.mapData[rowIn][colIn];
+
     if((rowIn === this.rowLocation) && (colIn === this.colLocation)) {
+      console.log("Searching the room we are in...");
+      if(currentLocation[5].S !== undefined) {
+        console.log("...found some stairs! They go" + currentLocation[5].S);
+        this.changeFloors(currentLocation[5].S-1,0,0);
+      }
       //if there is something in the room, trigger an interaction here!
-      console.log("We are already here!");
+
       return;
     }
     //This returns a string
@@ -336,8 +348,23 @@ class GroupLocation {
       setTimeout(function(){
         theGroup.takeStep(); }, 100); //In ms, the delay between moves
       }
-    }
+    };
 
+
+    changeFloors(directionIn, destinationRow, destinationCol) {
+      console.log(this.currentTower);
+      console.log(this.currentTower.floorList);
+      console.log(this.currentFloorLevel + " " + directionIn);
+      this.currentFloor = this.currentTower.floorList[this.currentFloorLevel+directionIn];
+      this.currentFloorLevel  += directionIn;
+      this.rowLocation = destinationRow;
+      this.colLocation = destinationCol;
+      //this.currentFloor.showMap();
+      this.currentFloor.mapData[this.rowLocation][this.colLocation][0] = 4;
+      this.directionOptions = this.checkMovementOptions();
+      //clearMap();
+      displayMap(this.currentFloor.mapData);
+    };
 
   } //End GroupLocation
 
@@ -352,6 +379,7 @@ class GroupLocation {
     //Add in a floor. Added to the end of the list
     assembleNewFloor (mapDataIn) {
       const newFloor = new FloorData(this.name + ", level " + (this.floorList.length+1), mapDataIn);
+      newFloor.level = (this.floorList.length+1);
       this.floorList.push(newFloor);
     };
 
@@ -388,11 +416,10 @@ class GroupLocation {
 
   //Takes 'complex' map data from a floor (the one that includes wall info), and generates a grid of buttons to the html. The colors/uses of the buttons depends on the room status.
   function displayMap(arrayIn) {
+    //Empty the existing map first
+    clearMap();
     //'mapZone' is the grid the buttons are fit into.
     let $map = $("#mapZone");
-
-
-
 
     for(let i = 0; i < arrayIn.length; i++) {
       for(let j = 0; j < arrayIn[i].length; j++) {
@@ -405,7 +432,16 @@ class GroupLocation {
             $newSquare.addClass("hidden");
           }
           if(Object.keys(arrayIn[i][j][5]).length > 1) { //The room has something in it
-            $newSquare.text(`${Object.keys(arrayIn[i][j][5])[0]}`);
+            let roomSymbol = "";
+            if(arrayIn[i][j][5].S !== undefined) {
+              roomSymbol += "S";
+              if(arrayIn[i][j][5].S == 2) {
+                roomSymbol += "&#8593";
+              } else {
+                roomSymbol += "&#8595";
+              }
+            }
+            $newSquare.html(roomSymbol);
           }
           if(arrayIn[i][j][0] === 2) { //The room is grey, and reachable
             $newSquare.addClass("explorable");
@@ -638,10 +674,13 @@ class GroupLocation {
 
   const theSpire = new TowerOfFloors("The Spire");
   theSpire.assembleNewFloor(FloorData.floorLayouts()[0]);
+  theSpire.assembleNewFloor(FloorData.floorLayouts()[1]);
 
-  const theParty = new GroupLocation(theSpire.floorList[0],0,0);
+  theSpire.listFloors();
 
-  displayMap(theParty.currentFloor.mapData);
+  const theParty = new GroupLocation(theSpire,0,0);
+
+  //displayMap(theParty.currentFloor.mapData);
 
   $("#combatOverlay").hide();
 
