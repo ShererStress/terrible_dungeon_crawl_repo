@@ -34,7 +34,7 @@ $(()=>{ //Start jQuery
       this.fatigue = 30;
       this.maxWounds = 30; //used to keep track of max fatigue
 
-      this.damage = 12;
+      this.damage = 20;
       this.armor = 1;
 
       this.onesGroup;
@@ -260,6 +260,7 @@ $(()=>{ //Start jQuery
         addToCombatLog(`${this.name} has perished.`);
         $(`#${this.battlefieldId}Block`).css("backgroundColor", "#4f2b2b");
         this.aliveBool = false;
+        this.clearAllThreat();
       }
     };
 
@@ -285,6 +286,10 @@ $(()=>{ //Start jQuery
 
     //Displays the buttons to allow the player to input a turn. This may get REALLY bloated.
     displayTurnOptions(keysIn = []) {
+      if(!this.aliveBool) { //If dead, pass the turn.
+        this.currentBattlefield.playerTurnComplete();
+        return;
+      }
       console.log("generating options");
       $("#commandList").empty();
       let buttonOwner = this;
@@ -314,17 +319,19 @@ $(()=>{ //Start jQuery
                 //create a new button here:
                 $combatButton.text(`Next action: ${buttonOwner.name}`)
                 $combatButton.on("click", function() {
-                  buttonOwner.actionThreatenAttack(buttonOwner.currentBattlefield.enemyList[i],1);
+                  //This order is VERY important!
                   $combatButton.next().css("display","block");
                   $combatButton.remove();
+                  buttonOwner.actionThreatenAttack(buttonOwner.currentBattlefield.enemyList[i],1);
                 });//End the combat button definition
               } else if (test1 === 1 ){
                 addToCombatLog(`${buttonOwner.name} plans to disengage from ${buttonOwner.currentBattlefield.enemyList[i].name}`);
                 $combatButton.text(`Next action: ${buttonOwner.name}`)
                 $combatButton.on("click", function() {
-                  buttonOwner.actionDisengageAttack(buttonOwner.currentBattlefield.enemyList[i]);
+                  //This order is VERY important!
                   $combatButton.next().css("display","block");
                   $combatButton.remove();
+                  buttonOwner.actionDisengageAttack(buttonOwner.currentBattlefield.enemyList[i]);
                 });//End the combat button definition
               }
               //TempName
@@ -410,7 +417,7 @@ $(()=>{ //Start jQuery
 
       this.initiativeList = [];
 
-      this.actionsRemaining = 0;
+      //this.actionsRemaining = 0;
 
     }
 
@@ -427,7 +434,7 @@ $(()=>{ //Start jQuery
 
       //loop for more foes
       let numberOfFoes = Math.floor(Math.random()*3)+1;
-      for (let i = 0; i < 2; i++) {
+      for (let i = 0; i < numberOfFoes; i++) {
         let newEnemy = new Creature(`RUNELORD${i+1}`);
         this.enemyList.push(newEnemy);
       }
@@ -485,6 +492,10 @@ $(()=>{ //Start jQuery
         $newPCBlock.append($("<h3>").text(`Attack: ${damage}`));
         $newPCBlock.append($("<h3>").text(`Armor: ${armor}`));
         $newPCBlock.append($("<h3>").text(`Threat: ${threat}/${maxThreat}`));
+
+        if(currentWounds <= 0) {
+          $newPCBlock.css("backgroundColor", "#4f2b2b");
+        }
 
       }
     };
@@ -560,7 +571,7 @@ $(()=>{ //Start jQuery
       }
 
       this.playerCharacterList[this.currentPlayerCharacter-1].displayTurnOptions();
-      this.actionsRemaining++;
+      //this.actionsRemaining++;
     }
 
     //Whenever the player finishes selecting what to do on a turn, this should be called to move combat forward. Calls 'enemyTurn()' once all player characters have selected actions.
@@ -577,20 +588,27 @@ $(()=>{ //Start jQuery
     enemyTurn() {
       for( let i = 0; i < this.enemyList.length; i++) {
         if(this.enemyList[i].aliveBool) {
-          //This won't avoid selecting dead adventurers - update!
-          let targetChoice = Math.floor(Math.random()*this.playerCharacterList.length);
+
+          let validTargets = [];
+          for(let i =0; i < this.playerCharacterList.length; i++) {
+            if(this.playerCharacterList[i].aliveBool) {
+              validTargets.push(i);
+            }
+          }
+          let targetChoice = validTargets[Math.floor(Math.random()*validTargets.length)];
 
           let $combatButton = $("<button>").addClass("combatButton");
           addToCombatLog(`${this.enemyList[i].name} is planning to threaten ${this.playerCharacterList[targetChoice].name}`);
           $combatButton.text(`Next Action: ${this.enemyList[i].name}`);
           let buttonsBattlefield = this;
           $combatButton.on("click", function() {
-            buttonsBattlefield.enemyList[i].actionThreatenAttack(buttonsBattlefield.playerCharacterList[targetChoice],1);
+            //This order is VERY important
             $combatButton.next().css("display","block");
             $combatButton.remove();
+            buttonsBattlefield.enemyList[i].actionThreatenAttack(buttonsBattlefield.playerCharacterList[targetChoice],1);
           });
           $("#commandListTwo").append($combatButton);
-          this.actionsRemaining++;
+          //this.actionsRemaining++;
         }
       }
 
@@ -598,10 +616,13 @@ $(()=>{ //Start jQuery
       $("#commandListTwo").children().eq(0).css("display","block")
     };
 
+    //
     checkToEndTurn() {
-      this.actionsRemaining--;
-      if(this.actionsRemaining <= 0) {
-        this.actionsRemaining = 0;
+      console.log("checking end of turn");
+      console.log($("#commandListTwo").children().length);
+      //this.actionsRemaining--;
+      if($("#commandListTwo").children().length <= 0) {
+        //this.actionsRemaining = 0;
         this.resolveCombat();
       }
     }
@@ -618,18 +639,27 @@ $(()=>{ //Start jQuery
       //clearCombatLog();
 
       let deadFoes = 0;
+      let deadPCs = 0;
       for(let i = 0; i < this.enemyList.length; i++) {
         if(!this.enemyList[i].aliveBool) {
           deadFoes++;
         }
       }
-      if(deadFoes === this.enemyList.length) {
-        addToCombatLog("---")
+      for(let i = 0; i < this.playerCharacterList.length; i++) {
+        if(!this.playerCharacterList[i].aliveBool) {
+          deadPCs++;
+        }
+      }
+
+      if(deadFoes === this.enemyList.length) { //Players win
         addToCombatLog("---")
         addToCombatLog("No foes remain");
         this.combatCleanUp();
-      } else {
+      } else if (deadPCs === this.playerCharacterList.length) { //Players lose
         addToCombatLog("---")
+        addToCombatLog("The adventurers have fallen");
+        addToCombatLog("GAME OVER")
+      } else {
         addToCombatLog("---")
         addToCombatLog("A new round begins")
         this.combatState = 1;
@@ -657,7 +687,7 @@ $(()=>{ //Start jQuery
         theBattlefield.combatState = 0;
         theBattlefield.currentPlayerCharacter = 0;
         theBattlefield.enemyList = [];
-        theBattlefield.actionsRemaining = 0;
+        //theBattlefield.actionsRemaining = 0;
         //Initiative lists = [];
 
         //restore PCs stamina

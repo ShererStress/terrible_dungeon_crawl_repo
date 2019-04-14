@@ -13,40 +13,14 @@ simple map data, and character data seem prudent to save
 */
 $(()=>{ //Start jQuery
 
-////// Button listeners
+//////Button listeners
 $("#helpButton").on("click", showHelp );
 $("#closeHelpButton").on("click", hideHelp);
 
-//Example Map Arrays
 
-//[y][x]... damnit
-let mapPrototype = [
-  [1,1,1,1,1],
-  [0,0,1,0,1],
-  [0,1,1,1,1],
-  [0,1,1,0,1],
-  [0,1,0,"1_sU_4.1",1]
-];
+//Map Arrays
 
-let mapPrototype2 = [
-  [1,1,1,1,1,1],
-  [0,0,1,0,1,0],
-  [0,1,1,1,1,1],
-  [0,1,1,0,1,0],
-  [0,"1_sD_4.3",0,1,1,0]
-];
-
-let mapPrototype3 = [
-  [1,1,1,1,1,1]
-];
-
-let mapPrototype4 = [
-  [1],
-  [0],
-  [0],
-  [0],
-  [0]
-];
+//[row][col]
 
 let mapPrototype5 = [
   [1,1,1,1,1,1,0,0,1,0],
@@ -61,23 +35,40 @@ let mapPrototype5 = [
   [0,1,1,1,1,1,1,1,1,1]
 ];
 
-let mapPrototype6 = [
-  [3,3,3,3,3,3,0,0,3,0],
-  [0,0,3,0,3,0,3,3,3,0],
-  [0,3,3,3,3,3,3,0,3,3],
-  [0,3,3,0,3,0,3,3,0,3],
-  [0,3,0,3,3,0,0,3,0,3],
-  [3,3,3,3,3,3,0,0,3,3],
-  [0,0,3,0,3,0,3,3,3,0],
-  [0,3,3,3,3,3,3,0,3,3],
-  [0,3,3,0,3,0,3,3,0,3],
-  [0,3,0,3,3,0,0,3,0,3]
+let floorOne = [
+  [1,1,1,1,1],
+  [0,0,1,0,1],
+  [0,0,1,1,1],
+  ["1_sU_4.1",1,0,0,1],
+  [1,1,1,1,1]
 ];
+//Up: 3.0
 
+let floorTwo = [
+  [1,"1_sU_1.2",0,1,1,1],
+  [1,0,0,0,1,1],
+  [1,1,1,1,1,1],
+  [0,1,1,0,1,0],
+  [0,"1_sD_3.0",0,"1_sU_7.0",1,0]
+];
+//Down 4.1
+//Up1 0.1
+//Up2 4.3
 
-
-
-
+let floorThree = [
+  [1,1,1,1,1,1,0,0,0,0],
+  [1,0,"1_sD_0.1",0,0,1,0,1,1,1],
+  [1,0,0,0,1,1,0,0,0,1],
+  [1,0,1,0,1,0,1,1,0,1],
+  [1,1,1,1,1,0,1,1,1,1],
+  [0,0,0,0,0,0,0,1,0,0],
+  [0,0,1,1,1,1,0,1,1,1],
+  ["1_sD_4.3",1,1,1,0,1,0,0,1,0],
+  [0,0,1,1,0,1,1,1,1,1],
+  [0,0,0,1,1,1,0,0,0,0]
+];
+//Down1 1.2
+//Down2 7.0
 
 
 
@@ -89,7 +80,7 @@ let mapPrototype6 = [
 class FloorData {
   //List of premadeFloors
   static floorLayouts() {
-    return [mapPrototype, mapPrototype2, mapPrototype3,mapPrototype4,mapPrototype5,mapPrototype6];
+    return [floorOne, floorTwo, floorThree];
   };
 
   constructor (nameIn, mapDataIn) {
@@ -126,7 +117,7 @@ class FloorData {
           }
         }
         roomContents.roomId = (i*mapWidth+j);
-        console.log(roomContents);
+        //console.log(roomContents);
 
       }
     }
@@ -263,22 +254,22 @@ class GroupLocation {
       switch (direction) {
         case 0: { //Up
           this.rowLocation--;
-          console.log("Moved up!");
+          //console.log("Moved up!");
           break;
         }
         case 1: { //Right
           this.colLocation++;
-          console.log("Moved right!");
+          //console.log("Moved right!");
           break;
         }
         case 2: { //Down
           this.rowLocation++;
-          console.log("Moved down!");
+          //console.log("Moved down!");
           break;
         }
         case 3: { //left
           this.colLocation--;
-          console.log("Moved left!");
+          //console.log("Moved left!");
           break;
         }
       }
@@ -343,7 +334,7 @@ class GroupLocation {
     //causes the group to move
     this.changePosition(parseInt(this.currentDirections.shift()));
     //checks if the movement is complete - can probably put the 'goToCombat' trigger here to interrupt movement consistently
-    if(Math.random() > 1) {
+    if(Math.random() > .5) {
       this.currentDirections.length = 0;
       console.log("BATTLETIME");
       $("#combatOverlay").show();
@@ -439,14 +430,11 @@ class GroupLocation {
             $newSquare.addClass("hidden");
           }
           if(Object.keys(arrayIn[i][j][5]).length > 1) { //The room has something in it
-            console.log("foundSomething");
             let roomSymbol = "";
             if(arrayIn[i][j][5].sD !== undefined) {
-              console.log("Down");
               roomSymbol += "S&#8595";
             }
             if(arrayIn[i][j][5].sU !== undefined) {
-              console.log("Up");
               roomSymbol += "S&#8593";
             }
             $newSquare.html(roomSymbol);
@@ -683,6 +671,7 @@ class GroupLocation {
   const theSpire = new TowerOfFloors("The Spire");
   theSpire.assembleNewFloor(FloorData.floorLayouts()[0]);
   theSpire.assembleNewFloor(FloorData.floorLayouts()[1]);
+  theSpire.assembleNewFloor(FloorData.floorLayouts()[2]);
 
   theSpire.listFloors();
 
