@@ -25,7 +25,7 @@ let mapPrototype = [
   [0,0,1,0,1],
   [0,1,1,1,1],
   [0,1,1,0,1],
-  [0,1,0,"1S2",1]
+  [0,1,0,"1_sU_4.1",1]
 ];
 
 let mapPrototype2 = [
@@ -33,7 +33,7 @@ let mapPrototype2 = [
   [0,0,1,0,1,0],
   [0,1,1,1,1,1],
   [0,1,1,0,1,0],
-  [0,"1S0",0,1,1,0]
+  [0,"1_sD_4.3",0,1,1,0]
 ];
 
 let mapPrototype3 = [
@@ -119,7 +119,7 @@ class FloorData {
           this.mapData[i][j] = [mapDataIn[i][j],-1,-1,-1,-1,roomContents];
         } else {
           let roomData = mapDataIn[i][j];
-          let roomDataArray = roomData.split("");
+          let roomDataArray = roomData.split("_");
           this.mapData[i][j] = [parseInt(roomDataArray.shift()),-1,-1,-1,-1,roomContents];
           while(roomDataArray.length > 0) {
             roomContents[`${roomDataArray.shift()}`] = roomDataArray.shift();
@@ -307,9 +307,15 @@ class GroupLocation {
 
     if((rowIn === this.rowLocation) && (colIn === this.colLocation)) {
       console.log("Searching the room we are in...");
-      if(currentLocation[5].S !== undefined) {
-        console.log("...found some stairs! They go" + currentLocation[5].S);
-        this.changeFloors(currentLocation[5].S-1,0,0);
+      if(currentLocation[5].sU !== undefined) {
+        console.log("...found some stairs! They go up!");
+        let newLocation = currentLocation[5].sU.split(".");
+        this.changeFloors(1,Number.parseInt(newLocation[0]),Number.parseInt(newLocation[1]));
+      }
+      if(currentLocation[5].sD !== undefined) {
+        console.log("...found some stairs! They go down!");
+        let newLocation = currentLocation[5].sD.split(".");
+        this.changeFloors(-1,Number.parseInt(newLocation[0]),Number.parseInt(newLocation[1]));
       }
       //if there is something in the room, trigger an interaction here!
 
@@ -350,11 +356,12 @@ class GroupLocation {
       }
     };
 
-
+    //Move up or down a floor.
     changeFloors(directionIn, destinationRow, destinationCol) {
-      console.log(this.currentTower);
-      console.log(this.currentTower.floorList);
-      console.log(this.currentFloorLevel + " " + directionIn);
+      //Change the current room to explored
+      this.currentFloor.mapData[this.rowLocation][this.colLocation][0] = 3;
+
+      console.log(`Changing floor by ${directionIn}`);
       this.currentFloor = this.currentTower.floorList[this.currentFloorLevel+directionIn];
       this.currentFloorLevel  += directionIn;
       this.rowLocation = destinationRow;
@@ -432,14 +439,15 @@ class GroupLocation {
             $newSquare.addClass("hidden");
           }
           if(Object.keys(arrayIn[i][j][5]).length > 1) { //The room has something in it
+            console.log("foundSomething");
             let roomSymbol = "";
-            if(arrayIn[i][j][5].S !== undefined) {
-              roomSymbol += "S";
-              if(arrayIn[i][j][5].S == 2) {
-                roomSymbol += "&#8593";
-              } else {
-                roomSymbol += "&#8595";
-              }
+            if(arrayIn[i][j][5].sD !== undefined) {
+              console.log("Down");
+              roomSymbol += "S&#8595";
+            }
+            if(arrayIn[i][j][5].sU !== undefined) {
+              console.log("Up");
+              roomSymbol += "S&#8593";
             }
             $newSquare.html(roomSymbol);
           }
