@@ -31,8 +31,8 @@ $(()=>{ //Start jQuery
       this.totalEngagement = 0;
       this.overwhelmedState = 0; //0 -> no, 1 -> at limit, 2 -> Yes
 
-      this.fatigue = 80;
-      this.maxWounds = 20; //used to keep track of max fatigue
+      this.fatigue = 30;
+      this.maxWounds = 30; //used to keep track of max fatigue
 
       this.damage = 12;
       this.armor = 1;
@@ -49,7 +49,6 @@ $(()=>{ //Start jQuery
     attack(targetList = this.engagedFoes) {
       if(targetList.length === 0) {
         addToCombatLog(`${this.name} was not threatening any foes, and made no attack.`);
-        console.log(`${this.name} was not threatening any foes, and made no attack.`);
         return;
       }
       let totalDamage = this.calculateDamage();
@@ -75,7 +74,6 @@ $(()=>{ //Start jQuery
     };
 
     calculateDamage() {
-      //let damageModifier = this.engagementThreshold - ;
       return(Math.max(this.damage - this.totalEngagement,1));
     }
 
@@ -84,14 +82,15 @@ $(()=>{ //Start jQuery
       let damageTaken = Math.max(incomingDamage-effectiveArmor,1);
       this.fatigue -= damageTaken;
       this.currentBattlefield.updateHealthValues();
+      addToCombatLog(`${this.name} took ${damageTaken} damage!`)
       if( this.fatigue <= 0) { //If dead
+        addToCombatLog(`${this.name} was slain!`);
         $(`#${this.battlefieldId}Block`).css("backgroundColor", "#4f2b2b");
         $(`#${this.battlefieldId}Block`).css("border-color","#5e5542");
         this.aliveBool = false;
         this.clearAllThreat();
         this.currentBattlefield.drawThreatLines();
       }
-      addToCombatLog(`${this.name} took ${damageTaken} damage!`)
       return(damageTaken);
     };
 
@@ -112,14 +111,12 @@ $(()=>{ //Start jQuery
         return;
       }
       if(this.overwhelmedState >= 1 && reciprocateBoolean === 1) {
-        console.log(`${this.name} can't threaten another foe - they are busy with their current targets!`);
         addToCombatLog(`${this.name} can't threaten another foe - they are busy with their current targets!`);
       } else {
         for(let i =0; i < this.engagedFoes.length; i++) {
           if(this.engagedFoes[i].indexOf(targetCreature) === 0) {
             this.engagedFoes[i][1]++;
             if(reciprocateBoolean === 1) {
-              console.log(`${this.name} pressed the attack against ${targetCreature.name}`);
               addToCombatLog(`${this.name} pressed the attack against ${targetCreature.name}`);
             }
             enemyExists = true;
@@ -128,7 +125,6 @@ $(()=>{ //Start jQuery
         if(!enemyExists) {
           this.engagedFoes.push([targetCreature,1]);
           if(reciprocateBoolean === 1) {
-            console.log(`${this.name} moved to attack ${targetCreature.name}`);
             addToCombatLog(`${this.name} moved to attack ${targetCreature.name}`);
           }
         }
@@ -136,7 +132,7 @@ $(()=>{ //Start jQuery
         this.updateTotalEngagement();
 
         if (this.totalEngagement > this.engagementThreshold){
-          console.log(`${this.name} is fighting too many foes - they're being overwhelmed!`);
+          addToCombatLog(`${this.name} is fighting too many foes - they're being overwhelmed!`);
         }
 
         //this is REALLY important - stops an infinte loop of recursion
@@ -167,30 +163,16 @@ $(()=>{ //Start jQuery
 
     //Loops through this creature's threat array and removes itself from other creatures' threat lists. Then deletes this creature's threat list. Used in case of withdraw or death.
     clearAllThreat() {
-      console.log(`removing all threat from ${this.name}`);
-
       while(this.engagedFoes.length > 0) {
-        console.log("Clearing another: "+ this.engagedFoes.length);
         this.clearSingleThreat(this.engagedFoes[0][0]);
       }
-      /*
-      for (let i = this.engagedFoes.length-1; i >= 0; i--) {
-        let currentCreature = this.engagedFoes[i][0];
-        console.log(`Next to remove from ${this.name}:  ${currentCreature.name}`);
-        currentCreature.clearSingleThreat(this, i);
-      }
-      */
-      console.log(`Cleared ${this.name}'s list`);
-      console.log(`${this.engagedFoes}`);
-      //this.engagedFoes.splice(0,this.engagedFoes.length);
-
       this.updateTotalEngagement();
       this.currentBattlefield.drawThreatLines();
     };
 
     //Removes this creature from a single foe's threat list, and this from the foe's list.
     clearSingleThreat(targetCreature, startIndex) {
-      console.log(`Single part 1: removing threat on ${targetCreature.name} due to ${this.name}`);
+      //remove this from foe's list
       let targetCreatureThreatList = targetCreature.engagedFoes;
       for (let j = 0; j < targetCreatureThreatList.length; j++) {
         if(targetCreatureThreatList[j][0] === this) {
@@ -198,8 +180,7 @@ $(()=>{ //Start jQuery
           targetCreature.updateTotalEngagement();
         }
       }
-
-      console.log(`Single part 2: removing threat on ${this.name} due to ${targetCreature.name}`);
+      //remove foe from this one's list
       for (let j = 0; j < this.engagedFoes.length; j++) {
         if(this.engagedFoes[j][0] === targetCreature) {
           this.engagedFoes.splice(j,1);
@@ -210,20 +191,7 @@ $(()=>{ //Start jQuery
       this.currentBattlefield.drawThreatLines();
     };
 
-    //remove single threateningTarget
-    //from this.threatList due to enemy
-
-
-
-
-
-    //remove all
-    //while(this.listSize > 0)
-    //remove single threateningTarget, at array[0]
-    //array.shift();
-
-
-
+    //More of a bugfixing method, but maybe it can be used later?
     logHealth() {
       console.log(`${this.fatigue}/${this.maxWounds}`);
     };
@@ -241,10 +209,11 @@ $(()=>{ //Start jQuery
       this.currentBattlefield.checkToEndTurn();
     };
 
-    actionDisengage(targetCreature) {
+    actionDisengageAttack(targetCreature) {
       if(this.aliveBool) {
         addToCombatLog(`${this.name} moved away from ${targetCreature.name}.`)
         this.clearSingleThreat(targetCreature);
+        this.attack();
       } else {
         addToCombatLog(`${this.name} was slain before it could act.`)
       }
@@ -273,13 +242,22 @@ $(()=>{ //Start jQuery
       let damageTaken = Math.max(incomingDamage-this.calculateDR(),1); //Always take 1 damage
       let fatigueDamageTaken = Math.min(damageTaken, this.fatigue);
       let woundDamage = damageTaken-fatigueDamageTaken;
-      //console.log("WOUND DAMAGE : " + woundDamage);
       this.fatigue -= fatigueDamageTaken;
       woundDamage += Math.floor(damageTaken/(Math.floor(this.maxWounds/10)));
       //console.log("TOTAL WOUND DAMAGE: "+ woundDamage);
       this.wounds -= woundDamage;
+      let damageMessage = `${this.name} lost ${fatigueDamageTaken} vigor`;
+      if(woundDamage > 1) {
+        damageMessage += ` and took ${woundDamage} wounds!`;
+      } else if (woundDamage === 1) {
+        damageMessage += ` and took ${woundDamage} wound!`;
+      } else {
+        damageMessage += "!";
+      }
+      addToCombatLog(damageMessage);
       this.currentBattlefield.updateHealthValues();
       if( this.wounds <= 0) { //If dead
+        addToCombatLog(`${this.name} has perished.`);
         $(`#${this.battlefieldId}Block`).css("backgroundColor", "#4f2b2b");
         this.aliveBool = false;
       }
@@ -344,7 +322,7 @@ $(()=>{ //Start jQuery
                 addToCombatLog(`${buttonOwner.name} plans to disengage from ${buttonOwner.currentBattlefield.enemyList[i].name}`);
                 $combatButton.text(`Next action: ${buttonOwner.name}`)
                 $combatButton.on("click", function() {
-                  buttonOwner.actionDisengage(buttonOwner.currentBattlefield.enemyList[i]);
+                  buttonOwner.actionDisengageAttack(buttonOwner.currentBattlefield.enemyList[i]);
                   $combatButton.next().css("display","block");
                   $combatButton.remove();
                 });//End the combat button definition
@@ -408,6 +386,11 @@ $(()=>{ //Start jQuery
   } //End of Enemy class
 
 
+
+
+
+
+
   //Controls the flow of the fight, and has access to eveything in it
   class Battlefield {
     constructor(playerGroupIn) {
@@ -430,16 +413,6 @@ $(()=>{ //Start jQuery
       this.actionsRemaining = 0;
 
     }
-
-
-
-
-
-
-
-
-
-
 
     /*
     function order:
@@ -579,9 +552,7 @@ $(()=>{ //Start jQuery
     //Each time it is called, it applies to the next character in the group; calls playerTurnComplete each time
     primePlayerTurn() {
       //Index for each player
-
       console.log("Current turn: " + this.playerCharacterList[this.currentPlayerCharacter].name);
-
 
       this.currentPlayerCharacter++;
       if(this.currentPlayerCharacter === this.playerCharacterList.length) {

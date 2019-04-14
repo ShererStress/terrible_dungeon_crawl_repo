@@ -25,8 +25,10 @@ let mapPrototype = [
   [0,0,1,0,1],
   [0,1,1,1,1],
   [0,1,1,0,1],
-  [0,1,0,0,1]
+  [0,1,0,1,1]
 ];
+
+console.log((4).toString());
 
 let mapPrototype2 = [
   [1,1,1,1,1,1],
@@ -112,6 +114,14 @@ class FloorData {
     }
     for(let i = 0; i < mapHeight; i ++) {
       for(let j = 0; j < mapWidth; j ++) {
+        //Get info from prototype/simple map here!
+        /*
+        let roomData = mapDataIn[i][j];
+        let roomDataArray = roomData.split("");
+
+        let roomState = partseInt(roomDataArray.shift());
+        */
+
         this.mapData[i][j] = [mapDataIn[i][j],-1,-1,-1,-1];
       }
     }
@@ -273,6 +283,8 @@ class GroupLocation {
     this.directionOptions = this.checkMovementOptions();
     clearMap();
     displayMap(this.currentFloor.mapData);
+
+    //run room-based events here!
   };
 
   //This takes in a set of coordinates (often by clicking on a location), generates the fastest(?) available path there from the group's current location, then loops changePosition() through that path.
@@ -284,6 +296,7 @@ class GroupLocation {
     }
     //No movement necissary
     if((rowIn === this.rowLocation) && (colIn === this.colLocation)) {
+      //if there is something in the room, trigger an interaction here!
       console.log("We are already here!");
       return;
     }
@@ -309,7 +322,7 @@ class GroupLocation {
     //causes the group to move
     this.changePosition(parseInt(this.currentDirections.shift()));
     //checks if the movement is complete - can probably put the 'goToCombat' trigger here to interrupt movement consistently
-    if(Math.random() > 0.70) {
+    if(Math.random() > 1) {
       this.currentDirections.length = 0;
       console.log("BATTLETIME");
       $("#combatOverlay").show();
@@ -616,7 +629,7 @@ class GroupLocation {
   //generatePath(theSpire.floorList[0].mapData, 2, 2, 0, 4);
 
   const theSpire = new TowerOfFloors("The Spire");
-  theSpire.assembleNewFloor(FloorData.floorLayouts()[4]);
+  theSpire.assembleNewFloor(FloorData.floorLayouts()[0]);
 
   const theParty = new GroupLocation(theSpire.floorList[0],0,0);
 
