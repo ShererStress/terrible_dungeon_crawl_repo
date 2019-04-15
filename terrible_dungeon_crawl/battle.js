@@ -10,7 +10,6 @@ Disengage/withdraw
 Shift stance(STRETCH)
 
 // todo:
-convert to jQuery
 
 removing creatures is a bit more complex, as they exist in:
 every foe's engagement arrays
@@ -30,19 +29,19 @@ $(()=>{ //Start jQuery
       //Array of enemies this creature is threatening
       this.threatenedFoes = [];
       //Limit to the amount of threat the creature can hold off before suffering greater penalites
-      this.threatThreshold = 2;
+      this.threatThreshold = 3;
       //How much threat the creature is currently holding off
       this.totalThreat = 0;
       this.overwhelmedState = 0; //0 -> no, 1 -> at limit, 2 -> Yes
 
       //'outer' health bar. Easily recovered, lost before others.
-      this.vigor = 30;
-      this.maxWounds = 30; //used to keep track of max vigor
+      this.vigor = 35;
+      this.maxWounds = 35; //used to keep track of max vigor
 
       //Default damage per attack. Reduced by threat.
-      this.damage = 12;
+      this.damage = 14;
       //Default damage reduction. Reduced by threat past threatThreshold.
-      this.armor = 1;
+      this.armor = 2;
 
       //this.onesGroup; Not sure what this was used/planned for. Delete eventually?
 
@@ -253,19 +252,19 @@ $(()=>{ //Start jQuery
 
   //The adventurers! These are the player characters (PCs). Creatures with added button functionality, wounds, and other abilties/complexity
   class Adventurer extends Creature {
-    constructor(nameIn = "Garzmok", weaponIn = "a sword") {
+    constructor(nameIn = "Garzmok", weaponIn = "a sword", woundsIn = 40, damageIn = 12, armorIn = 2, threatThIn = 2) {
       super();
       this.name = nameIn;
       this.weapon = weaponIn;
       //A secondary health bar; adventurers do not perish until their wounds hit zero (note- the players see the opposite: as wounds as taken, this value decreases! Makes more sense from their perspective.)
-      this.maxWounds = 45;
-      this.wounds = 45;
+      this.maxWounds = woundsIn;
+      this.wounds = this.maxWounds;
 
       //these are the same as in the creature class
-      this.vigor = 45;
-      this.threatThreshold = 3;
-      this.damage = 12;
-      this.armor = 2;
+      this.vigor = this.maxWounds;
+      this.damage = damageIn;
+      this.armor = armorIn;
+      this.threatThreshold = threatThIn;
       this.aliveBool = true;
     };
 
@@ -311,7 +310,6 @@ $(()=>{ //Start jQuery
     //call this once on character generation to generate arrays for making buttons in combat. Organize this stuff WELL
     //May not need this, depending how things get implemented in displayTurnOptions()
     createTurnOptionQuery(targetSelectorIndex, actionSelectorindex) { //Rename this
-      console.log("creating a turn query");
       let viableTargetTypes = ["actionMenu","foes","adventurers","all","self","foesAoE","adventurersAoE","allAoE"];
       let viabaleActionTypes = ["threatenAttack","disengageAttack"];
       let targetType = viableTargetTypes[targetSelectorIndex];
@@ -323,7 +321,6 @@ $(()=>{ //Start jQuery
 
     //Displays the buttons to allow the player to input a turn. This may get REALLY bloated (surprise, it did!).
     displayTurnOptions(targetType, actionType) {
-      console.log("trying to display turn options");
       if(!this.aliveBool) { //If dead, simply pass the turn without making buttons.
         this.currentBattlefield.playerTurnComplete();
         return;
@@ -346,7 +343,6 @@ $(()=>{ //Start jQuery
       //move this into a new function?
       let menuOptionText = ["Threaten a foe","Disengage from a foe"]
       if(targetType === "actionMenu") { //Generate the list of actions that can be taken.
-        console.log("Making the options menu");
         for(let i = 0; i < 2; i++) {
           let $planningButton = $("<button>").addClass("commandButton");
           $planningButton.text(`${buttonOwner.name} - ${menuOptionText[i]}`);
@@ -367,7 +363,6 @@ $(()=>{ //Start jQuery
       }
 
       if(targetType === "foes" || targetType === "all") {
-        console.log("Targeting foes");
         for(let i = 0; i < this.currentBattlefield.enemyList.length; i++) {
           if(this.currentBattlefield.enemyList[i].aliveBool){//Only make buttons pertaining to those still in combat - this allows others to ignore the dead
             targetArray.push(this.currentBattlefield.enemyList.slice(i,i+1)[0]);
@@ -382,11 +377,8 @@ $(()=>{ //Start jQuery
         }
       }
 
-      console.log("TargetArray:");
-      console.log(targetArray);
       for(let i = 0; i < targetArray.length; i++) {
         let targetID = targetArray[i].battlefieldId.slice(-1);
-        console.log("creating planning buttons");
         //Make a planning button for each vaild target
         let $planningButton = $("<button>").addClass("commandButton");
         //The text of the planning button
@@ -459,7 +451,7 @@ $(()=>{ //Start jQuery
 
 
 
-      //This won't work forever as more buttons are added
+      //I don't think I need this anymore, keeping it around for a bit longer to be safe
       /*
       if($("#commandList").children().length === 0) {
         //console.log("No foes remain.");
@@ -1021,13 +1013,15 @@ function combatLoop() {
 //Run 'Stuff'
 
 let quake = new ForceOfNature();
-
-let garzmok = new Adventurer("Garzmok", "a greatsword");
-let runa = new Adventurer("Runa", "unarmed strikes");
+nameIn = "Garzmok", weaponIn = "a sword", woundsIn = 40, damageIn = 12, armorIn = 2, threatThIn = 2
+let garzmok = new Adventurer("Garzmok", "a greatsword", 55, 14, 1, 2);
+let runa = new Adventurer("Runa", "unarmed strikes", 40, 10, 4, 3);
+let talathel = new Adventurer("Talathel", "a rapier", 35, 18, 2, 1);
 
 let partyOne = new PlayerGroup();
 partyOne.addPC(garzmok);
 partyOne.addPC(runa);
+partyOne.addPC(talathel);
 partyOne.updateMapHealthBlocks();
 mbComms.commLinkToPlayerGroup(partyOne);
 
