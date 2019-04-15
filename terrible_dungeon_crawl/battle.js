@@ -448,6 +448,14 @@ $(()=>{ //Start jQuery
       }
 
       //add a 'back' button to let the player reconsider their options.
+      if(targetArray.length > 0) {
+        let $backButton = $("<button>").addClass("commandButton");
+        $backButton.text(`Back to previous options`);
+        $backButton.on("click", function() {
+          buttonOwner.createTurnOptionQuery(0,-1); //This will have to be changed!
+        });
+        $("#commandList").append($backButton);
+      }
 
 
 
