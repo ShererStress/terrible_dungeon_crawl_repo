@@ -291,7 +291,6 @@ $(()=>{ //Start jQuery
       } else {
         damageMessage += "!";
       }
-      addToCombatLog(woundChipDamage);
       addToCombatLog(damageMessage);
       this.currentBattlefield.updateHealthValues();
       //If dead, clear threat and let the player know
@@ -325,7 +324,7 @@ $(()=>{ //Start jQuery
     //Displays the buttons to allow the player to input a turn. This may get REALLY bloated (surprise, it did!).
     displayTurnOptions(targetType, actionType) {
       if(!this.aliveBool) { //If dead, simply pass the turn without making buttons.
-        this.currentBattlefield.playerTurnComplete();
+        this.currentBattlefield.planningPhaseController();
         return;
       }
       $("#commandList").empty();
@@ -427,7 +426,7 @@ $(()=>{ //Start jQuery
           $(`#enemy${targetID}Block`).css({"border-color":"#5e5542","background-color":"#e5c990"});
           $(`#pc${pcID}Block`).css({"border-color":"#5e5542","background-color":"#e5c990"});
           //This character's turn is planned, move onto the next one
-          buttonOwner.currentBattlefield.playerTurnComplete();
+          buttonOwner.currentBattlefield.planningPhaseController();
         }); //End 'on click' for planningButton
 
         $planningButton.on("mouseenter", function() {
@@ -544,7 +543,7 @@ class Battlefield {
 
   /* For now:
   function order:
-  startCombat() -> Looped(primePlayerTurn() <-> playerTurnComplete())
+  startCombat() -> Looped(primePlayerTurn() <-> ())
   ^                                     |
   |                                     v
   roundCleanUp()  <-  resolveCombat() <-  enemyTurn()
@@ -572,13 +571,11 @@ class Battlefield {
 
   //Adds dynamic html elements. Call once at start of combat, but can also be used to refresh everything about all statblocks.
   displayBattlefield(initialFight = false) {
-    console.log("display!");
     this.createPCStatBlocks();
     this.createEnemyStatBlocks();
 
     if(!initialFight) { //Avoids priming a player turn at the start of the game
       this.planningPhaseController();
-      this.primePlayerTurn();
     }
 
   };
@@ -704,37 +701,30 @@ class Battlefield {
       }
       //the random number should resolve ties randomly... I hope
       this.perceptionList.sort(function(a,b){return (a[1] - (b[1]+(Math.random()*0.2-0.1)))});
-      console.log(this.perceptionList);
       this.combatState = 2;
     }
     //check the first index in the array, and call the correct methods for a turn to be created. Remove that index.
-    let nextCharacter = this.perceptionList.shift()[0];
-    console.log(nextCharacter);
-    if(nextCharacter instanceof Adventurer) {
-      console.log("It's a PC!");
-    } else {
-      console.log("It's an enemy!");
+    if(this.perceptionList.length > 0) {
+      let nextCharacter = this.perceptionList.shift()[0];
+      if(nextCharacter instanceof Adventurer) {
+        this.primePlayerTurn(nextCharacter);
+      } else {
+        this.enemyTurn(nextCharacter);
+      }
+    } else { //All turns submitted. Clear the command list and show the first action!
+      $("#commandList").empty()
+      $("#actionList").children().eq(0).css("display","block");
     }
-
   };
 
   //Creates buttons for one of the characters the player controls
-  //Each time it is called, it applies to the next character in the group; calls playerTurnComplete each time
-  primePlayerTurn(whichTurn) {
-    //Index for each player
-    //console.log("Current turn: " + this.playerCharacterList[this.currentPlayerCharacter].name);
 
-    this.currentPlayerCharacter++;
-    //If all players have selected actions, the combatState is advanced to move to the foes. This will change once perception/initiative are added.
-    if(this.currentPlayerCharacter === this.playerCharacterList.length) {
-      this.combatState = 2;
-    }
-
-    //Creates the command buttons for the current PC
-    this.playerCharacterList[this.currentPlayerCharacter-1].createTurnOptionQuery(0,-1);
-  }
+  primePlayerTurn(whosTurn) {
+    whosTurn.createTurnOptionQuery(0,-1);
+  };
 
   //Whenever the player finishes selecting what to do on a turn, this should be called to move combat forward. Calls 'enemyTurn()' once all player characters have selected actions.
+  /*
   playerTurnComplete() {
     if(this.combatState === 2) {
       $("#commandList").empty();
@@ -743,11 +733,10 @@ class Battlefield {
       this.primePlayerTurn();
     }
   }
-
+  */
   //Decides what the enemies do. Probably random for the most part, for my sake. Creates a button that executes the enemy's action when clicked by the player. For now, only engages the PCs.
-  enemyTurn() {
-    for( let i = 0; i < this.enemyList.length; i++) {
-      if(this.enemyList[i].aliveBool) {
+  enemyTurn(whosTurn) {
+      if(whosTurn.aliveBool) {
 
         let validTargets = [];
         for(let i =0; i < this.playerCharacterList.length; i++) {
@@ -755,25 +744,23 @@ class Battlefield {
             validTargets.push(i);
           }
         }
-        let targetChoice = validTargets[Math.floor(Math.random()*validTargets.length)];
-
+        let targetChoiceIndex = validTargets[Math.floor(Math.random()*validTargets.length)];
+        let selectedTarget = this.playerCharacterList[targetChoiceIndex]
         let $combatButton = $("<button>").addClass("combatButton");
-        addToCombatLog(`${this.enemyList[i].name} is planning to threaten ${this.playerCharacterList[targetChoice].name} with ${this.enemyList[i].weapon}`);
-        $combatButton.text(`Next Action: ${this.enemyList[i].name}`);
-        let buttonsBattlefield = this;
+        addToCombatLog(`${whosTurn.name} is planning to threaten ${selectedTarget.name} with ${whosTurn.weapon}`);
+        $combatButton.text(`Next Action: ${whosTurn.name}`);
         $combatButton.on("click", function() {
           //This order is VERY important
           $combatButton.next().css("display","block");
           $combatButton.remove();
-          buttonsBattlefield.enemyList[i].actionThreatenAttack(buttonsBattlefield.playerCharacterList[targetChoice],1);
+          whosTurn.actionThreatenAttack(selectedTarget,1);
         });
         $("#actionList").append($combatButton);
         //this.actionsRemaining++;
       }
-    }
 
     //This will have to be moved when initiative is added. Make the first button visible once all commands are in place.
-    $("#actionList").children().eq(0).css("display","block")
+    this.planningPhaseController();
   };
 
   //
@@ -824,7 +811,7 @@ class Battlefield {
       addToCombatLog("A new round begins")
       this.combatState = 1;
       this.currentPlayerCharacter = 0;
-      this.primePlayerTurn();
+      this.planningPhaseController();
     }
 
   }
