@@ -22,47 +22,55 @@ every foe's engagement arrays
 $(()=>{ //Start jQuery
 
   //The basis for most in-game creatures
-  //Only uses fatigue for health - no wounds
+  //Only uses vigor for health - no wounds
   class Creature {
     constructor(nameIn = "RUNELORD") {
       this.name = nameIn;
       //Array of enemies this creature is threatening
-      this.engagedFoes = [];
-      this.engagementThreshold = 2;
-      this.totalEngagement = 0;
+      this.threatenedFoes = [];
+      //Limit to the amount of threat the creature can hold off before suffering greater penalites
+      this.threatThreshold = 2;
+      //How much threat the creature is currently holding off
+      this.totalThreat = 0;
       this.overwhelmedState = 0; //0 -> no, 1 -> at limit, 2 -> Yes
 
-      this.fatigue = 30;
-      this.maxWounds = 30; //used to keep track of max fatigue
+      //'outer' health bar. Easily recovered, lost before others.
+      this.vigor = 30;
+      this.maxWounds = 30; //used to keep track of max vigor
 
+      //Default damage per attack. Reduced by threat.
       this.damage = 20;
+      //Default damage reduction. Reduced by threat past threatThreshold.
       this.armor = 1;
 
-      this.onesGroup;
+      //this.onesGroup; Not sure what this was used/planned for. Delete eventually?
+
       this.currentBattlefield; //Allows references to battlefield
       this.battlefieldId; //Used to refer to html element ids
 
+      //Is this alive? Updated upon death.
       this.aliveBool = true;
     };
 
-    //Do some damage. By default, this is applied to something in the array of engaged foes.
+
+    //Do some damage to something the creature (generally) threatens.
     //Getting an undefined error? Make some notArray -> array code
-    attack(targetList = this.engagedFoes) {
+    attack(targetList = this.threatenedFoes) {
       if(targetList.length === 0) {
         addToCombatLog(`${this.name} was not threatening any foes, and made no attack.`);
         return;
       }
       let totalDamage = this.calculateDamage();
-      //Pick a target - new function?
+      //Get a list of targets with the greatest threat
       let possibleTargetArray = [];
       let highestPriority = 0;
-      for(let i = 0; i < this.engagedFoes.length; i++) {
-        if(this.engagedFoes[i][1] > highestPriority) {
-          highestPriority = this.engagedFoes[i][1]; //Sets new priority level
+      for(let i = 0; i < this.threatenedFoes.length; i++) {
+        if(this.threatenedFoes[i][1] > highestPriority) {
+          highestPriority = this.threatenedFoes[i][1]; //Sets new priority level
           possibleTargetArray.length = 0; //Avoids memory leaks?
           possibleTargetArray = [i];
-        } else if (this.engagedFoes[i][1] === highestPriority) {
-          highestPriority = this.engagedFoes[i][1];
+        } else if (this.threatenedFoes[i][1] === highestPriority) {
+          highestPriority = this.threatenedFoes[i][1];
           possibleTargetArray.push(i);
         }
       }
@@ -74,17 +82,23 @@ $(()=>{ //Start jQuery
       target.takeDamage(totalDamage);
     };
 
+
+    //Calculates the creature's current damage based on how much threat it is encountering.
     calculateDamage() {
-      return(Math.max(this.damage - this.totalEngagement,1));
+      return(Math.max(this.damage - this.totalThreat,1));
     }
 
+
+    //Applies damage to this creature. If the damage brings it below 0 vigor, it dies.
     takeDamage(incomingDamage) {
+      //Armor mitigates damage on a 1-to-1 basis.
       let effectiveArmor = this.calculateDR();
+      //An attack always deals 1 damage.
       let damageTaken = Math.max(incomingDamage-effectiveArmor,1);
-      this.fatigue -= damageTaken;
+      this.vigor -= damageTaken;
       this.currentBattlefield.updateHealthValues();
       addToCombatLog(`${this.name} took ${damageTaken} damage!`)
-      if( this.fatigue <= 0) { //If dead
+      if( this.vigor <= 0) { //If dead - changes statBlock colors and clears all threat the creature was connected to.
         addToCombatLog(`${this.name} was slain!`);
         $(`#${this.battlefieldId}Block`).css("backgroundColor", "#4f2b2b");
         $(`#${this.battlefieldId}Block`).css("border-color","#5e5542");
@@ -95,44 +109,50 @@ $(()=>{ //Start jQuery
       return(damageTaken);
     };
 
+
+    //Calculates the effective armor of the creature. This is allows to go negative!
     calculateDR() {
       let effectiveArmor = this.armor;
       if(this.overwhelmedState === 2) {
-        effectiveArmor -= (this.totalEngagement - this.engagementThreshold);
+        effectiveArmor -= (this.totalThreat - this.threatThreshold);
       }
       return(effectiveArmor);
-    }
+    };
+
 
     //Adds the target to this creature's list of threatened foes, or increases it's threat level for that creature if it is already there
     engageTarget(targetCreature, reciprocateBoolean = 0) {
-      //Search list of engaged targets for the foe
+
       let enemyExists = false;
-      if(!targetCreature.aliveBool) {
+      if(!targetCreature.aliveBool) { //If the target is dead, no threat is generated.
         addToCombatLog(`${targetCreature.name} is slain - ${this.name} did not bother  threatening it.`);
         return;
       }
+      //If this creature is trying to generate more threat, it won't be able to if it is at or above its threatThreshold
       if(this.overwhelmedState >= 1 && reciprocateBoolean === 1) {
         addToCombatLog(`${this.name} can't threaten another foe - they are busy with their current targets!`);
       } else {
-        for(let i =0; i < this.engagedFoes.length; i++) {
-          if(this.engagedFoes[i].indexOf(targetCreature) === 0) {
-            this.engagedFoes[i][1]++;
+        //Search list of engaged targets for the foe. If it exists, increase the threat level, otherwise, add the creatue to the list and generate 1 threat.
+        for(let i =0; i < this.threatenedFoes.length; i++) {
+          if(this.threatenedFoes[i].indexOf(targetCreature) === 0) {
+            this.threatenedFoes[i][1]++; //Amplify threat
             if(reciprocateBoolean === 1) {
               addToCombatLog(`${this.name} pressed the attack against ${targetCreature.name}`);
             }
             enemyExists = true;
           }
         }
-        if(!enemyExists) {
-          this.engagedFoes.push([targetCreature,1]);
+        if(!enemyExists) { //Create new threat
+          this.threatenedFoes.push([targetCreature,1]);
           if(reciprocateBoolean === 1) {
             addToCombatLog(`${this.name} moved to attack ${targetCreature.name}`);
           }
         }
 
-        this.updateTotalEngagement();
+        this.updateTotalThreat();
 
-        if (this.totalEngagement > this.engagementThreshold){
+        //Lets the player know something is overwhelemed
+        if (this.totalThreat > this.threatThreshold){
           addToCombatLog(`${this.name} is fighting too many foes - they're being overwhelmed!`);
         }
 
@@ -144,15 +164,17 @@ $(()=>{ //Start jQuery
       }
     };
 
-    updateTotalEngagement() {
+
+    //Totals the amount of threat the creature is encountering and updates the overwhelemedState based on the result. Call after changing threat!
+    updateTotalThreat() {
       let totalProblems = 0;
-      for(let i = 0; i<this.engagedFoes.length; i++) {
-        totalProblems += this.engagedFoes[i][1];
+      for(let i = 0; i<this.threatenedFoes.length; i++) {
+        totalProblems += this.threatenedFoes[i][1];
       }
-      this.totalEngagement = totalProblems;
-      if(this.totalEngagement >= this.engagementThreshold) {
+      this.totalThreat = totalProblems;
+      if(this.totalThreat >= this.threatThreshold) {
         this.overwhelmedState = 1;
-        if (this.totalEngagement > this.engagementThreshold) {
+        if (this.totalThreat > this.threatThreshold) {
           this.overwhelmedState = 2;
         }
       } else {
@@ -162,44 +184,47 @@ $(()=>{ //Start jQuery
       this.currentBattlefield.updateAttackArmorThreatValues();
     };
 
+
     //Loops through this creature's threat array and removes itself from other creatures' threat lists. Then deletes this creature's threat list. Used in case of withdraw or death.
     clearAllThreat() {
-      while(this.engagedFoes.length > 0) {
-        this.clearSingleThreat(this.engagedFoes[0][0]);
+      while(this.threatenedFoes.length > 0) {
+        this.clearSingleThreat(this.threatenedFoes[0][0]);
       }
-      this.updateTotalEngagement();
+      this.updateTotalThreat();
       this.currentBattlefield.drawThreatLines();
     };
+
 
     //Removes this creature from a single foe's threat list, and this from the foe's list.
     clearSingleThreat(targetCreature, startIndex) {
       //remove this from foe's list
-      let targetCreatureThreatList = targetCreature.engagedFoes;
+      let targetCreatureThreatList = targetCreature.threatenedFoes;
       for (let j = 0; j < targetCreatureThreatList.length; j++) {
         if(targetCreatureThreatList[j][0] === this) {
           targetCreatureThreatList.splice(j,1);
-          targetCreature.updateTotalEngagement();
+          targetCreature.updateTotalThreat();
         }
       }
       //remove foe from this one's list
-      for (let j = 0; j < this.engagedFoes.length; j++) {
-        if(this.engagedFoes[j][0] === targetCreature) {
-          this.engagedFoes.splice(j,1);
+      for (let j = 0; j < this.threatenedFoes.length; j++) {
+        if(this.threatenedFoes[j][0] === targetCreature) {
+          this.threatenedFoes.splice(j,1);
         }
       }
 
-      this.updateTotalEngagement();
+      this.updateTotalThreat();
       this.currentBattlefield.drawThreatLines();
     };
 
     //More of a bugfixing method, but maybe it can be used later?
     logHealth() {
-      console.log(`${this.fatigue}/${this.maxWounds}`);
+      console.log(`${this.vigor}/${this.maxWounds}`);
     };
+
 
     //Combat Action list - calls other methods in correct combinations for combat to flow correctly. Called by the combatButtons!
 
-    //Threatens the target, then attacks something.
+    //Threaten the target, then attack something.
     actionThreatenAttack(threatenTarget, threatenReciprocateBool) {
       if(this.aliveBool) {
         this.engageTarget(threatenTarget,threatenReciprocateBool);
@@ -210,6 +235,7 @@ $(()=>{ //Start jQuery
       this.currentBattlefield.checkToEndTurn();
     };
 
+    //Remove all threat from one target, then attack something
     actionDisengageAttack(targetCreature) {
       if(this.aliveBool) {
         addToCombatLog(`${this.name} moved away from ${targetCreature.name}.`)
@@ -224,30 +250,37 @@ $(()=>{ //Start jQuery
 
   } //End of Creature class
 
+  //The adventurers! These are the player characters (PCs). Creatures with added button functionality, wounds, and other abilties/complexity
   class Adventurer extends Creature {
     constructor(nameIn = "Garzmok") {
       super();
       this.name = nameIn;
+      //A secondary health bar; adventurers do not perish until their wounds hit zero (note- the players see the opposite: as wounds as taken, this value decreases! Makes more sense from their perspective.)
       this.maxWounds = 40;
       this.wounds = 40;
-      this.fatigue = 40;
-      this.engagementThreshold = 7;
 
+      //these are the same as in the creature class
+      this.vigor = 40;
+      this.threatThreshold = 7;
       this.damage = 13;
       this.armor = 3;
-
       this.aliveBool = true;
     };
 
+
+    //Damage is applied to vigor before wounds, but if enough vigor is lost in a single hit, some vigor damage is converted into wound 'chip damage'.
+    //This also generates a message to let the player how much damage of each type was applied.
     takeDamage(incomingDamage) {
       let damageTaken = Math.max(incomingDamage-this.calculateDR(),1); //Always take 1 damage
-      let fatigueDamageTaken = Math.min(damageTaken, this.fatigue);
-      let woundDamage = damageTaken-fatigueDamageTaken;
-      this.fatigue -= fatigueDamageTaken;
-      woundDamage += Math.floor(damageTaken/(Math.floor(this.maxWounds/10)));
-      //console.log("TOTAL WOUND DAMAGE: "+ woundDamage);
+      //This is the wound chip damage
+      let woundChipDamage = Math.floor(damageTaken/(Math.floor(this.maxWounds/10)));
+      damageTaken -= woundChipDamage; //Vigor damage is CONVERTED to wound chip damage
+      let vigorDamageTaken = Math.min(damageTaken, this.vigor); //no negative vigor allowed
+
+      let woundDamage = (damageTaken-vigorDamageTaken) + woundChipDamage;
+      this.vigor -= vigorDamageTaken;
       this.wounds -= woundDamage;
-      let damageMessage = `${this.name} lost ${fatigueDamageTaken} vigor`;
+      let damageMessage = `${this.name} lost ${vigorDamageTaken} vigor`;
       if(woundDamage > 1) {
         damageMessage += ` and took ${woundDamage} wounds!`;
       } else if (woundDamage === 1) {
@@ -255,6 +288,7 @@ $(()=>{ //Start jQuery
       } else {
         damageMessage += "!";
       }
+      addToCombatLog(woundChipDamage);
       addToCombatLog(damageMessage);
       this.currentBattlefield.updateHealthValues();
       if( this.wounds <= 0) { //If dead
@@ -266,7 +300,7 @@ $(()=>{ //Start jQuery
     };
 
     logHealth() {
-      console.log(`${this.fatigue}/${this.wounds}/${this.maxWounds}`);
+      console.log(`${this.vigor}/${this.wounds}/${this.maxWounds}`);
     };
 
     //Same as the creatures, but allows the combat flow to continue.
@@ -384,8 +418,12 @@ $(()=>{ //Start jQuery
       } else {
         this.wounds = Math.min(this.maxWounds, this.wounds + amountRecovered);
       }
-      this.fatigue = this.wounds;
+      this.vigor = this.wounds;
       console.log(`${this.name} is at ${this.wounds} wounds.`);
+      if(this.wounds > 0) {
+        this.aliveBool = true;
+        $(`#${this.battlefieldId}Block`).css("backgroundColor", "#e5c990");
+      }
     }
 
 
@@ -396,12 +434,12 @@ $(()=>{ //Start jQuery
   class Enemy extends Creature {
     constructor() {
       super();
-      this.fatigue = 20;
+      this.vigor = 20;
 
       this.damage = 5;
       this.armor = 1;
 
-      this.engagedFoes = [];
+      this.threatenedFoes = [];
     };
 
 
@@ -477,13 +515,13 @@ $(()=>{ //Start jQuery
       $("#playerCharacterZone").empty();
       for(let i = 0; i < this.playerCharacterList.length; i++) {
 
-        let currentFatigue = this.playerCharacterList[i].fatigue;
+        let currentVigor = this.playerCharacterList[i].vigor;
         let currentWounds = this.playerCharacterList[i].wounds;
         let maxWounds = this.playerCharacterList[i].maxWounds;
         let damage = this.playerCharacterList[i].calculateDamage();
         let armor = this.playerCharacterList[i].calculateDR();
-        let threat = this.playerCharacterList[i].totalEngagement;
-        let maxThreat = this.playerCharacterList[i].engagementThreshold;
+        let threat = this.playerCharacterList[i].totalThreat;
+        let maxThreat = this.playerCharacterList[i].threatThreshold;
 
         let $newPCBlock = $("<div>").attr("id",`pc${i}Block`);
         $newPCBlock.addClass("pcStatBlock");
@@ -491,19 +529,19 @@ $(()=>{ //Start jQuery
         let $flexContainerHealth = $("<div>").addClass("flexBoxRow");
 
         let $healthContainer = $("<div>").addClass("healthContainer").css("margin", "auto");
-        let $fatigueBar = $("<bar>").addClass("fatigueBar");
-        $fatigueBar.attr("id",`pc${i}FatigueBar`);
+        let $vigorBar = $("<bar>").addClass("vigorBar");
+        $vigorBar.attr("id",`pc${i}VigorBar`);
         let $woundBar = $("<bar>").addClass("woundBar");
         $woundBar.attr("id",`pc${i}WoundBar`);
-        $fatigueBar.css("width",`${100*currentFatigue/currentWounds}%`);
+        $vigorBar.css("width",`${100*currentVigor/currentWounds}%`);
         $woundBar.css("width",`${100*currentWounds/maxWounds}%`);
         $healthContainer.append($woundBar);
-        $woundBar.append($fatigueBar);
+        $woundBar.append($vigorBar);
 
         $("#playerCharacterZone").append($newPCBlock);
         $newPCBlock.append($flexContainerHealth);
         $flexContainerHealth.append($healthContainer);
-        $flexContainerHealth.append($("<h3>").text(`${currentFatigue}/${currentWounds}`).css("margin","auto"));
+        $flexContainerHealth.append($("<h3>").text(`${currentVigor}/${currentWounds}`).css("margin","auto"));
         $newPCBlock.append($("<h3>").text(`Attack: ${damage}`));
         $newPCBlock.append($("<h3>").text(`Armor: ${armor}`));
         $newPCBlock.append($("<h3>").text(`Threat: ${threat}/${maxThreat}`));
@@ -519,43 +557,43 @@ $(()=>{ //Start jQuery
       $("#enemyZone").empty();
       for(let i = 0; i < this.enemyList.length; i++) {
 
-        let currentFatigue = this.enemyList[i].fatigue;
+        let currentVigor = this.enemyList[i].vigor;
         let maxWounds = this.enemyList[i].maxWounds;
 
         let $newEnemyBlock = $("<div>").attr("id",`enemy${i}Block`);
         $newEnemyBlock.addClass("enemyStatBlock");
         $newEnemyBlock.append($("<h4>").text(`${this.enemyList[i].name}`));
-        $newEnemyBlock.append($("<h3>").text(`${currentFatigue}/${maxWounds}`));
+        $newEnemyBlock.append($("<h3>").text(`${currentVigor}/${maxWounds}`));
 
         let $healthContainer = $("<div>").addClass("healthContainer");
-        let $fatigueBar = $("<bar>").addClass("fatigueBar");
-        $fatigueBar.attr("id",`enemy${i}FatigueBar`);
-        $fatigueBar.css("width",`${100*currentFatigue/maxWounds}%`);
+        let $vigorBar = $("<bar>").addClass("vigorBar");
+        $vigorBar.attr("id",`enemy${i}VigorBar`);
+        $vigorBar.css("width",`${100*currentVigor/maxWounds}%`);
 
         $("#enemyZone").append($newEnemyBlock);
         $($newEnemyBlock).append($healthContainer);
-        $healthContainer.append($fatigueBar);
+        $healthContainer.append($vigorBar);
       }
     };
 
-    //Goes through all characters and updates fatigue/wounds
+    //Goes through all characters and updates vigor/wounds
     updateHealthValues() {
       for(let i = 0; i < this.playerCharacterList.length; i++) {
-        let currentFatigue = this.playerCharacterList[i].fatigue;
+        let currentVigor = this.playerCharacterList[i].vigor;
         let currentWounds = this.playerCharacterList[i].wounds;
         let maxWounds = this.playerCharacterList[i].maxWounds;
-        let $healthText = `${currentFatigue}/${currentWounds}`;
+        let $healthText = `${currentVigor}/${currentWounds}`;
         //Change these values if the statblocks are rearranged!
         $(`#pc${i}Block`).children().eq(1).children().eq(1).text($healthText);
         $(`#pc${i}WoundBar`).css("width",`${100*currentWounds/maxWounds}%`);
-        $(`#pc${i}FatigueBar`).css("width",`${100*currentFatigue/currentWounds}%`);
+        $(`#pc${i}VigorBar`).css("width",`${100*currentVigor/currentWounds}%`);
       }
       for(let i = 0; i < this.enemyList.length; i++) {
-        let currentFatigue = this.enemyList[i].fatigue;
-        let maxFatigue = this.enemyList[i].maxWounds;
-        let healthText = `${currentFatigue}/${maxFatigue}`;
+        let currentVigor = this.enemyList[i].vigor;
+        let maxVigor = this.enemyList[i].maxWounds;
+        let healthText = `${currentVigor}/${maxVigor}`;
         $(`#enemy${i}Block`).children().eq(1).text(healthText);
-        $(`#enemy${i}FatigueBar`).css("width",`${100*currentFatigue/maxFatigue}%`);
+        $(`#enemy${i}VigorBar`).css("width",`${100*currentVigor/maxVigor}%`);
       }
     };
 
@@ -563,8 +601,8 @@ $(()=>{ //Start jQuery
       for(let i = 0; i < this.playerCharacterList.length; i++) {
         let damage = this.playerCharacterList[i].calculateDamage();
         let armor = this.playerCharacterList[i].calculateDR();
-        let threat = this.playerCharacterList[i].totalEngagement;
-        let maxThreat = this.playerCharacterList[i].engagementThreshold;
+        let threat = this.playerCharacterList[i].totalThreat;
+        let maxThreat = this.playerCharacterList[i].threatThreshold;
 
         $(`#pc${i}Block`).children().eq(2).text(`Attack: ${damage}`);
         $(`#pc${i}Block`).children().eq(3).text(`Armor: ${armor}`);
@@ -708,7 +746,7 @@ $(()=>{ //Start jQuery
         //restore PCs stamina
         for(let i = 0; i < theBattlefield.playerCharacterList.length; i++) {
           let currentPC = theBattlefield.playerCharacterList[i];
-          currentPC.fatigue = currentPC.wounds;
+          currentPC.vigor = currentPC.wounds;
         }
 
         //create new roll initiative button that calls startCombat()
@@ -747,7 +785,7 @@ $(()=>{ //Start jQuery
       let yTwoStart = Math.round(600/(numberEnemies+1))
       //Assuming default height of 600px, width of 300px
       for(let i = 0; i < this.playerCharacterList.length; i++) {
-        let currentCharThreat = this.playerCharacterList[i].engagedFoes;
+        let currentCharThreat = this.playerCharacterList[i].threatenedFoes;
         for (let j = 0; j < currentCharThreat.length; j++) {
           let threatAmount = currentCharThreat[j][1];
           for(let k=threatAmount; k > 0; k--) {
