@@ -22,6 +22,7 @@ class mapBattleCommunicator {
     this.linkedAdventurerList = [];
     //The battlefield the PCs and foes exist in
     this.linkedBattlefield;
+    this.linked
   }
 
   //Add a PC to the list
@@ -44,6 +45,8 @@ class mapBattleCommunicator {
       adventurerToHeal.restoreWounds(0,1);
     }
     this.linkedBattlefield.updateHealthValues();
+    //This is bad. Link directly to the player group.
+    this.linkedBattlefield.attachedPlayerGroup.updateMapHealthBlocks();
   };
 
   //Loops over the entire list of linked adventurers, recovering that many wounds for each. Once again, a value of -1 recovers all wounds.
@@ -54,10 +57,6 @@ class mapBattleCommunicator {
     }
   };
 
-  //Grabs info from the PCs statblocks and returns some values - NOT the variables themselves.
-  commReturnPartyStatus() {
-    console.log("nothing happening here yet");
-  };
 
 } //End mapBattleCommunicator class
 
@@ -276,6 +275,8 @@ $(()=>{ //Start jQuery
       this.currentDirections = [];
       this.movingBool = false;
       displayMap(this.currentFloor.mapData);
+      //Used to determine if a battle is going to occur
+      this.encounterChance = 0;
     }
 
 
@@ -389,11 +390,15 @@ $(()=>{ //Start jQuery
       //causes the group to move
       this.changePosition(parseInt(this.currentDirections.shift()));
       //checks if the movement is complete - can probably put the 'goToCombat' trigger here to interrupt movement consistently
-      if(Math.random() > .75) {
+      if(Math.random()*100 < this.encounterChance) {
         this.currentDirections.length = 0;
+        this.encounterChance = 0 - Math.trunc(10 - (this.encounterChance)/10);
         console.log("BATTLETIME");
         $("#combatOverlay").show();
+      } else {
+        this.encounterChance += 2;
       }
+      console.log(this.encounterChance);
       if(this.currentDirections.length > 0) {
         //using 'this' in a setTimeout refers to the window of setTimeout... I think. The following allows the method to refer to the instantiation of the class, instead
         let theGroup = this;
@@ -421,6 +426,7 @@ $(()=>{ //Start jQuery
         if(currentLocationOnMap[5].t !== undefined) {
           mbComms.commRemoveWoundsAllTargets(-1);
           console.log("Heading back to town.");
+          this.encounterChance = 0;
         }
       };
 

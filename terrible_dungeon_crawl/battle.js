@@ -267,7 +267,6 @@ $(()=>{ //Start jQuery
       this.aliveBool = true;
     };
 
-
     //Damage is applied to vigor before wounds, but if enough vigor is lost in a single hit, some vigor damage is converted into wound 'chip damage'.
     //This also generates a message to let the player how much damage of each type was applied.
     takeDamage(incomingDamage) {
@@ -447,6 +446,7 @@ $(()=>{ //Start jQuery
       //Used by the clas methods to check where we are in the combat loop
       this.combatState = 0;
       //The list of adventurers in the party.
+      this.attachedPlayerGroup = playerGroupIn; //Use when adding new party member?
       this.playerCharacterList = playerGroupIn.playerList;
       //The list of foes to fight in the current battle
       this.enemyList = [];
@@ -743,6 +743,8 @@ $(()=>{ //Start jQuery
         //hide combat overlay
         $("#combatOverlay").hide();
 
+
+
         //reset battlefield values to default state
         theBattlefield.combatState = 0;
         theBattlefield.currentPlayerCharacter = 0;
@@ -750,11 +752,12 @@ $(()=>{ //Start jQuery
         //theBattlefield.actionsRemaining = 0;
         //Initiative lists = [];
 
-        //restore PCs stamina
+        //restore PCs stamina, update the map display
         for(let i = 0; i < theBattlefield.playerCharacterList.length; i++) {
           let currentPC = theBattlefield.playerCharacterList[i];
           currentPC.vigor = currentPC.wounds;
         }
+        theBattlefield.attachedPlayerGroup.updateMapHealthBlocks();
 
         //create new roll initiative button that calls startCombat()
 
@@ -825,7 +828,7 @@ $(()=>{ //Start jQuery
   }//End Battlefield class
 
 
-  //Contains the list of player characters, and some functions to act on all of them
+  //Contains the list of player characters, and functions to act on all of them. Used by the mapBattleCommunicator a lot.
   class PlayerGroup {
     constructor() {
       this.playerList = []
@@ -833,6 +836,29 @@ $(()=>{ //Start jQuery
 
     addPC(characterIn) {
       this.playerList.push(characterIn);
+    };
+
+    updateMapHealthBlocks() {
+        let $mapHealthBox = $("#mapHealthBarZone");
+      $mapHealthBox.empty();
+
+      for(let i = 0; i < this.playerList.length; i++) {
+        let currentVigor = this.playerList[i].vigor;
+        let currentWounds = this.playerList[i].wounds;
+        let maxWounds = this.playerList[i].maxWounds;
+
+        let $healthContainer = $("<div>").addClass("healthContainer").css("margin", "auto");
+        $healthContainer.css("width","60px").css("height","15px").css("margin","2px");
+        let $vigorBar = $("<bar>").addClass("vigorBar");
+        let $woundBar = $("<bar>").addClass("woundBar");
+        $vigorBar.css("width",`${100*currentVigor/currentWounds}%`);
+        $woundBar.css("width",`${100*currentWounds/maxWounds}%`);
+        $healthContainer.append($woundBar);
+        $woundBar.append($vigorBar);
+        $mapHealthBox.append($("<h2>").text(`${this.playerList[i].name}`).css("font-size","8px"))
+        $mapHealthBox.append($("<h2>").text(`${currentVigor}/${currentWounds}`).css("font-size","8px"))
+        $mapHealthBox.append($healthContainer);
+      }
     };
 
   } //End PlayerGroup class
@@ -921,6 +947,7 @@ $(()=>{ //Start jQuery
   let partyOne = new PlayerGroup();
   partyOne.addPC(garzmok);
   partyOne.addPC(runa);
+  partyOne.updateMapHealthBlocks();
 
   mbComms.commAddTolinkedAdventurerList(garzmok);
   mbComms.commAddTolinkedAdventurerList(runa);
