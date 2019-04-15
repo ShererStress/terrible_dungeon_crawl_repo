@@ -26,6 +26,7 @@ $(()=>{ //Start jQuery
   class Creature {
     constructor(nameIn = "RUNELORD") {
       this.name = nameIn;
+      //Array of enemies this creature is threatening
       this.engagedFoes = [];
       this.engagementThreshold = 2;
       this.totalEngagement = 0;
