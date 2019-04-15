@@ -92,6 +92,7 @@ li {
 
 .commandButton{
   width: 100%;
+  height: 50px;
   border-radius: 2px;
 }
 
@@ -102,7 +103,7 @@ li {
 .combatButton {
   display: none;
   width: 100%;
-  height: 30px;
+  height: 50px;
 }
 
 .combatButton:hover {
