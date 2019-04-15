@@ -401,12 +401,12 @@ $(()=>{ //Start jQuery
       if(Math.random()*100 < this.encounterChance) {
         this.currentDirections.length = 0;
         this.encounterChance = 0 - Math.trunc(10 - (this.encounterChance)/10);
-        console.log("BATTLETIME");
+        //console.log("BATTLETIME");
         $("#combatOverlay").show();
       } else {
         this.encounterChance += 2;
       }
-      console.log(this.encounterChance);
+      //console.log(this.encounterChance);
       if(this.currentDirections.length > 0) {
         //using 'this' in a setTimeout refers to the window of setTimeout... I think. The following allows the method to refer to the instantiation of the class, instead
         let theGroup = this;

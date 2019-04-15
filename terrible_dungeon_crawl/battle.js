@@ -24,8 +24,9 @@ $(()=>{ //Start jQuery
   //The basis for most in-game creatures
   //Only uses vigor for health - no wounds
   class Creature {
-    constructor(nameIn = "RUNELORD") {
+    constructor(nameIn = "RUNELORD", weaponDescriptor = "a glaive") {
       this.name = nameIn;
+      this.weapon = weaponDescriptor;
       //Array of enemies this creature is threatening
       this.threatenedFoes = [];
       //Limit to the amount of threat the creature can hold off before suffering greater penalites
@@ -39,7 +40,7 @@ $(()=>{ //Start jQuery
       this.maxWounds = 30; //used to keep track of max vigor
 
       //Default damage per attack. Reduced by threat.
-      this.damage = 20;
+      this.damage = 12;
       //Default damage reduction. Reduced by threat past threatThreshold.
       this.armor = 1;
 
@@ -145,7 +146,7 @@ $(()=>{ //Start jQuery
         if(!enemyExists) { //Create new threat
           this.threatenedFoes.push([targetCreature,1]);
           if(reciprocateBoolean === 1) {
-            addToCombatLog(`${this.name} moved to attack ${targetCreature.name}`);
+            addToCombatLog(`${this.name} moved to threaten ${targetCreature.name}`);
           }
         }
 
@@ -252,18 +253,19 @@ $(()=>{ //Start jQuery
 
   //The adventurers! These are the player characters (PCs). Creatures with added button functionality, wounds, and other abilties/complexity
   class Adventurer extends Creature {
-    constructor(nameIn = "Garzmok") {
+    constructor(nameIn = "Garzmok", weaponIn = "a sword") {
       super();
       this.name = nameIn;
+      this.weapon = weaponIn;
       //A secondary health bar; adventurers do not perish until their wounds hit zero (note- the players see the opposite: as wounds as taken, this value decreases! Makes more sense from their perspective.)
-      this.maxWounds = 40;
-      this.wounds = 40;
+      this.maxWounds = 45;
+      this.wounds = 45;
 
       //these are the same as in the creature class
-      this.vigor = 40;
-      this.threatThreshold = 7;
-      this.damage = 13;
-      this.armor = 3;
+      this.vigor = 45;
+      this.threatThreshold = 3;
+      this.damage = 12;
+      this.armor = 2;
       this.aliveBool = true;
     };
 
@@ -339,7 +341,7 @@ $(()=>{ //Start jQuery
               //Use a switch or if/else to select which function to 'store' here in a new button. WAY overthrought this one
               let $combatButton = $("<button>").addClass("combatButton");
               if(test1 === 0) { //Threaten a foe
-                addToCombatLog(`${buttonOwner.name} is planning to threaten ${buttonOwner.currentBattlefield.enemyList[i].name}`);
+                addToCombatLog(`${buttonOwner.name} is planning to threaten ${buttonOwner.currentBattlefield.enemyList[i].name} with ${buttonOwner.weapon}`);
                 //create a new button here:
                 $combatButton.text(`Next action: ${buttonOwner.name}`)
                 $combatButton.on("click", function() {
@@ -361,19 +363,20 @@ $(()=>{ //Start jQuery
               //TempName
               $("#commandListTwo").append($combatButton);
 
-              $(`#enemy${i}Block`).css("border-color","#5e5542");
-              $(`#pc${pcID}Block`).css("border-color","#5e5542");
+              $(`#enemy${i}Block`).css({"border-color":"#5e5542","background-color":"#e5c990"});
+              $(`#pc${pcID}Block`).css({"border-color":"#5e5542","background-color":"#e5c990"});
               //This character's turn is planned, move onto the next one
               buttonOwner.currentBattlefield.playerTurnComplete();
             }); //End 'on click' for planningButton
 
             $planningButton.on("mouseenter", function() {
-              $(`#enemy${i}Block`).css("border-color","blue");
-              $(`#pc${pcID}Block`).css("border-color","blue");
+              $(`#enemy${i}Block`).css({"border-color":"blue","background-color":"#ffe7b5"});
+              $(`#pc${pcID}Block`).css({"border-color":"blue","background-color":"#ffe7b5"});
             });
+
             $planningButton.on("mouseleave", function() {
-              $(`#enemy${i}Block`).css("border-color","#5e5542");
-              $(`#pc${pcID}Block`).css("border-color","#5e5542");
+              $(`#enemy${i}Block`).css({"border-color":"#5e5542","background-color":"#e5c990"});
+              $(`#pc${pcID}Block`).css({"border-color":"#5e5542","background-color":"#e5c990"});
             });
             $("#commandList").append($planningButton)
           }
@@ -625,7 +628,7 @@ $(()=>{ //Start jQuery
     //Each time it is called, it applies to the next character in the group; calls playerTurnComplete each time
     primePlayerTurn() {
       //Index for each player
-      console.log("Current turn: " + this.playerCharacterList[this.currentPlayerCharacter].name);
+      //console.log("Current turn: " + this.playerCharacterList[this.currentPlayerCharacter].name);
 
       this.currentPlayerCharacter++;
       //If all players have selected actions, the combatState is advanced to move to the foes. This will change once perception/initiative are added.
@@ -661,7 +664,7 @@ $(()=>{ //Start jQuery
           let targetChoice = validTargets[Math.floor(Math.random()*validTargets.length)];
 
           let $combatButton = $("<button>").addClass("combatButton");
-          addToCombatLog(`${this.enemyList[i].name} is planning to threaten ${this.playerCharacterList[targetChoice].name}`);
+          addToCombatLog(`${this.enemyList[i].name} is planning to threaten ${this.playerCharacterList[targetChoice].name} with ${this.enemyList[i].weapon}`);
           $combatButton.text(`Next Action: ${this.enemyList[i].name}`);
           let buttonsBattlefield = this;
           $combatButton.on("click", function() {
@@ -681,8 +684,8 @@ $(()=>{ //Start jQuery
 
     //
     checkToEndTurn() {
-      console.log("checking end of turn");
-      console.log($("#commandListTwo").children().length);
+      //console.log("checking end of turn");
+      //console.log($("#commandListTwo").children().length);
       //this.actionsRemaining--;
       if($("#commandListTwo").children().length <= 0) {
         //this.actionsRemaining = 0;
@@ -870,7 +873,7 @@ $(()=>{ //Start jQuery
 
     //show/hide levelup modal
 
-    
+
 
   } //End PlayerGroup class
 
@@ -952,8 +955,8 @@ $(()=>{ //Start jQuery
 
   let quake = new ForceOfNature();
 
-  let garzmok = new Adventurer("Garzmok");
-  let runa = new Adventurer("Runa");
+  let garzmok = new Adventurer("Garzmok", "a greatsword");
+  let runa = new Adventurer("Runa", "unarmed strikes");
 
   let partyOne = new PlayerGroup();
   partyOne.addPC(garzmok);
