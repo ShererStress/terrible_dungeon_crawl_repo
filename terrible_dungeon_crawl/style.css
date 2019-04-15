@@ -44,6 +44,7 @@ sectionCombat {
   background-color: #404959;
   width: 200px;
   border-right: 3px solid #5e5542;
+  position: relative;
 }
 
 #playerCharacterZone {
@@ -80,6 +81,20 @@ ul {
   margin: 0;
 }
 
+#actionList{
+  position: absolute;
+
+  width: 100%;
+}
+
+.alignListBottom {
+  bottom: 0;
+}
+
+.alignListTop {
+  top: 0;
+}
+
 #combatLog {
   /* height: 100px; */
   overflow: auto;
@@ -101,7 +116,7 @@ li {
 }
 
 .combatButton {
-  display: none;
+  /* display: none; */
   width: 100%;
   height: 50px;
 }
