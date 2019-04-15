@@ -22,18 +22,26 @@ class mapBattleCommunicator {
     this.linkedAdventurerList = [];
     //The battlefield the PCs and foes exist in
     this.linkedBattlefield;
-    this.linked
+    this.linkedPlayerGroup;
   }
 
   //Add a PC to the list
   commAddTolinkedAdventurerList(adventurerIn) {
     this.linkedAdventurerList.push(adventurerIn);
-    console.log(this.linkedAdventurerList);
   };
 
   //Add the battlefield
   commLinkToBattlefield(battlefieldIn) {
     this.linkedBattlefield = battlefieldIn;
+  }
+
+  commLinkToPlayerGroup(groupIn) {
+    this.linkedAdventurerList.length = 0;
+    this.linkedPlayerGroup = groupIn;
+    let newAdventurerList = this.linkedPlayerGroup.returnPCs();
+    for(let i = 0; i < newAdventurerList.length; i++) {
+      this.commAddTolinkedAdventurerList(newAdventurerList[i]);
+    }
   }
 
   //Recovers the wounds of a single adventurer. If the amount is = -1, it fully heals them.
@@ -745,7 +753,7 @@ $(()=>{ //Start jQuery
     theSpire.assembleNewFloor(FloorData.floorLayouts()[1]);
     theSpire.assembleNewFloor(FloorData.floorLayouts()[2]);
 
-    theSpire.listFloors();
+    //theSpire.listFloors();
 
     const theParty = new GroupLocation(theSpire,0,0);
 

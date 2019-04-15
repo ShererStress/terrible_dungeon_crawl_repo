@@ -393,7 +393,7 @@ $(()=>{ //Start jQuery
 
       //This won't work forever as more buttons are added
       if($("#commandList").children().length === 0) {
-        console.log("No foes remain.");
+        //console.log("No foes remain.");
 
         return;
       }
@@ -472,7 +472,7 @@ $(()=>{ //Start jQuery
         this.remove();
       });
       $("#commandZone").append($newInitButton);
-      this.displayBattlefield();
+      this.displayBattlefield(true);
     }
 
     /* For now:
@@ -504,10 +504,13 @@ $(()=>{ //Start jQuery
     }
 
     //Adds dynamic html elements. Call once at start of combat, but can also be used to refresh everything about all statblocks.
-    displayBattlefield() {
+    displayBattlefield(initialFight = false) {
       this.createPCStatBlocks();
       this.createEnemyStatBlocks();
-      this.primePlayerTurn();
+      if(!initialFight) { //Avoids priming a player turn at the start of the game
+        this.primePlayerTurn();
+      }
+
     };
 
     //Sets up player statblocks. Currently has name, health values, health bar, attack and armor, and threat. When altering, watch the order carefully!
@@ -828,7 +831,7 @@ $(()=>{ //Start jQuery
   }//End Battlefield class
 
 
-  //Contains the list of player characters, and functions to act on all of them. Used by the mapBattleCommunicator a lot.
+  //Contains the list of player characters, and functions to act on all of them. Used by the mapBattleCommunicator.
   class PlayerGroup {
     constructor() {
       this.playerList = []
@@ -837,6 +840,10 @@ $(()=>{ //Start jQuery
     addPC(characterIn) {
       this.playerList.push(characterIn);
     };
+
+    returnPCs() {
+      return this.playerList;
+    }
 
     updateMapHealthBlocks() {
         let $mapHealthBox = $("#mapHealthBarZone");
@@ -860,6 +867,10 @@ $(()=>{ //Start jQuery
         $mapHealthBox.append($healthContainer);
       }
     };
+
+    //show/hide levelup modal
+
+    
 
   } //End PlayerGroup class
 
@@ -948,9 +959,7 @@ $(()=>{ //Start jQuery
   partyOne.addPC(garzmok);
   partyOne.addPC(runa);
   partyOne.updateMapHealthBlocks();
-
-  mbComms.commAddTolinkedAdventurerList(garzmok);
-  mbComms.commAddTolinkedAdventurerList(runa);
+  mbComms.commLinkToPlayerGroup(partyOne);
 
   let fightOne = new Battlefield(partyOne);
   mbComms.commLinkToBattlefield(fightOne);
