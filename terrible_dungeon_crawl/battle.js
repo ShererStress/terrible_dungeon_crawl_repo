@@ -276,7 +276,7 @@ $(()=>{ //Start jQuery
       let woundChipDamage = Math.floor(damageTaken/(Math.floor(this.maxWounds/10)));
       damageTaken -= woundChipDamage; //Vigor damage is CONVERTED to wound chip damage
       let vigorDamageTaken = Math.min(damageTaken, this.vigor); //no negative vigor allowed
-
+      //Make sure all the damage is properly accounted for.
       let woundDamage = (damageTaken-vigorDamageTaken) + woundChipDamage;
       this.vigor -= vigorDamageTaken;
       this.wounds -= woundDamage;
@@ -291,7 +291,8 @@ $(()=>{ //Start jQuery
       addToCombatLog(woundChipDamage);
       addToCombatLog(damageMessage);
       this.currentBattlefield.updateHealthValues();
-      if( this.wounds <= 0) { //If dead
+      //If dead, clear threat and let the player know
+      if( this.wounds <= 0) {
         addToCombatLog(`${this.name} has perished.`);
         $(`#${this.battlefieldId}Block`).css("backgroundColor", "#4f2b2b");
         this.aliveBool = false;
@@ -302,13 +303,6 @@ $(()=>{ //Start jQuery
     logHealth() {
       console.log(`${this.vigor}/${this.wounds}/${this.maxWounds}`);
     };
-
-    //Same as the creatures, but allows the combat flow to continue.
-
-    engageTarget(targetCreature, reciprocateBoolean = 0) {
-      super.engageTarget(targetCreature, reciprocateBoolean);
-    };
-
 
 
     // Methods for interacting with Battlefield and PlayerGroup classes
@@ -325,7 +319,6 @@ $(()=>{ //Start jQuery
         this.currentBattlefield.playerTurnComplete();
         return;
       }
-      console.log("generating options");
       $("#commandList").empty();
       let buttonOwner = this;
       let pcID = this.battlefieldId.slice(-1); //Just get the number
@@ -335,10 +328,7 @@ $(()=>{ //Start jQuery
         for(let i = 0; i < this.currentBattlefield.enemyList.length; i++) {
           if(this.currentBattlefield.enemyList[i].aliveBool) { //Only make buttons pertaining to those still in combat - this allows others to ignore the dead
             //use a switch here to select which function to tack onto the button
-
-
             let $planningButton = $("<button>").addClass("commandButton");
-            console.log(`${this.name}+ ${n}`);
             //Here is the jist of it - be careful when editing.
             let test1 = n;
             if(test1 === 0) { //Threaten a foe
@@ -410,27 +400,26 @@ $(()=>{ //Start jQuery
       }
     };
 
+
     //'Globallly used' methods - called by the global class(es?)
+
+    //Recovers some of this character's wounds (by increasing the value).
     restoreWounds(amountRecovered = 0, maxRecoveryBool = 0) {
-      if(maxRecoveryBool === 1) {
+      if(maxRecoveryBool === 1) { //Max out wounds.
         this.wounds = this.maxWounds;
-        console.log("Full health!");
-      } else {
+      } else { //Don't go above the max.
         this.wounds = Math.min(this.maxWounds, this.wounds + amountRecovered);
       }
-      this.vigor = this.wounds;
-      console.log(`${this.name} is at ${this.wounds} wounds.`);
-      if(this.wounds > 0) {
+      this.vigor = this.wounds; //Increase vigor to new maximum.
+      if(this.wounds > 0) { //Resurrection! Might change the requirements for this.
         this.aliveBool = true;
         $(`#${this.battlefieldId}Block`).css("backgroundColor", "#e5c990");
       }
-    }
-
-
-
+    };
 
   } //End of Adventurer class
 
+  //I should convert most foes to this. Maybe.
   class Enemy extends Creature {
     constructor() {
       super();
@@ -451,53 +440,65 @@ $(()=>{ //Start jQuery
 
 
 
-  //Controls the flow of the fight, and has access to eveything in it
+  //Controls the flow of the fight, and has access to eveything in it. Brace yourself, this one's beefy
   class Battlefield {
+    //A battle needs some PCs to control, might as well assign them in the constructor.
     constructor(playerGroupIn) {
-      this.combatState = 0; //
-
+      //Used by the clas methods to check where we are in the combat loop
+      this.combatState = 0;
+      //The list of adventurers in the party.
       this.playerCharacterList = playerGroupIn.playerList;
-
+      //The list of foes to fight in the current battle
+      this.enemyList = [];
       //Lets the PCs easily refer to this class
       for(let i =0; i < this.playerCharacterList.length; i++) {
         this.playerCharacterList[i].currentBattlefield = this;
         this.playerCharacterList[i].battlefieldId = `pc${i}`;
       }
-
+      //Use to indicate which adventurer's planning turn it is
       this.currentPlayerCharacter = 0;
 
-      this.enemyList = [];
-
+      //Unused for now
+      this.perceptionList = [];
       this.initiativeList = [];
 
-      //this.actionsRemaining = 0;
-
+      //The next 10 lines initialize the html for the first fight, but the fight won't be triggered just yet.
+      let theBattlefield = this;
+      let $newInitButton = $("<button>").text("-Roll Initiative-");
+      $newInitButton.addClass("commandButton");
+      $newInitButton.on("click", function() {
+        addToCombatLog("Here we go again");
+        theBattlefield.startCombat();
+        this.remove();
+      });
+      $("#commandZone").append($newInitButton);
+      this.displayBattlefield();
     }
 
-    /*
+    /* For now:
     function order:
     startCombat() -> Looped(primePlayerTurn() <-> playerTurnComplete())
     ^                                     |
     |                                     v
     roundCleanUp()  <-  resolveCombat() <-  enemyTurn()
     */
-    //Generates foes (abstract this part eventually), and resets any necissary variables from the last fight
-    //Called once at the start of each fight
+
+    //Called once at the start of each fight. Generates foes (abstract this part eventually), and resets any necissary variables from the last fight.
     startCombat() {
 
-      //loop for more foes
+      //Decides on and generates a number of foes to fight. Update to pull information from the map side!
       let numberOfFoes = Math.floor(Math.random()*3)+1;
       for (let i = 0; i < numberOfFoes; i++) {
         let newEnemy = new Creature(`RUNELORD${i+1}`);
         this.enemyList.push(newEnemy);
       }
-
+      //Makes the battlefield aware of the foes, and them aware of it.
       for(let i =0; i < this.enemyList.length; i++) {
         this.enemyList[i].currentBattlefield = this;
         this.enemyList[i].battlefieldId = `enemy${i}`;
       }
 
-      //once the player has entered all commands, we can use a chain of functions (although being able to slow down or pause the combat would be nice - use setDelay!)
+      //Combat has begun
       this.combatState = 1;
       this.displayBattlefield();
     }
@@ -506,11 +507,10 @@ $(()=>{ //Start jQuery
     displayBattlefield() {
       this.createPCStatBlocks();
       this.createEnemyStatBlocks();
-
       this.primePlayerTurn();
     };
 
-    //Sets up player statblocks. Currently has name, health values, health bar, attack and armor
+    //Sets up player statblocks. Currently has name, health values, health bar, attack and armor, and threat. When altering, watch the order carefully!
     createPCStatBlocks() {
       $("#playerCharacterZone").empty();
       for(let i = 0; i < this.playerCharacterList.length; i++) {
@@ -553,6 +553,8 @@ $(()=>{ //Start jQuery
       }
     };
 
+
+    //Creates enemy statblocks. Has name, health bar, health values
     createEnemyStatBlocks() {
       $("#enemyZone").empty();
       for(let i = 0; i < this.enemyList.length; i++) {
@@ -576,7 +578,8 @@ $(()=>{ //Start jQuery
       }
     };
 
-    //Goes through all characters and updates vigor/wounds
+
+    //Goes through all characters and updates all HTML elements for vigor/wounds
     updateHealthValues() {
       for(let i = 0; i < this.playerCharacterList.length; i++) {
         let currentVigor = this.playerCharacterList[i].vigor;
@@ -597,6 +600,9 @@ $(()=>{ //Start jQuery
       }
     };
 
+
+    //Goes through the PCs and updates their HTML for armor, attack, and threat.
+    //Expand to include foes!
     updateAttackArmorThreatValues() {
       for(let i = 0; i < this.playerCharacterList.length; i++) {
         let damage = this.playerCharacterList[i].calculateDamage();
@@ -619,12 +625,13 @@ $(()=>{ //Start jQuery
       console.log("Current turn: " + this.playerCharacterList[this.currentPlayerCharacter].name);
 
       this.currentPlayerCharacter++;
+      //If all players have selected actions, the combatState is advanced to move to the foes. This will change once perception/initiative are added.
       if(this.currentPlayerCharacter === this.playerCharacterList.length) {
         this.combatState = 2;
       }
 
+      //Creates the command buttons for the current PC
       this.playerCharacterList[this.currentPlayerCharacter-1].displayTurnOptions();
-      //this.actionsRemaining++;
     }
 
     //Whenever the player finishes selecting what to do on a turn, this should be called to move combat forward. Calls 'enemyTurn()' once all player characters have selected actions.
@@ -921,7 +928,6 @@ $(()=>{ //Start jQuery
   let fightOne = new Battlefield(partyOne);
   mbComms.commLinkToBattlefield(fightOne);
 
-  fightOne.startCombat();
   quake.getExternalData();
 
 

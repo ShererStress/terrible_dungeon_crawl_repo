@@ -732,7 +732,7 @@ $(()=>{ //Start jQuery
 
     //Run these initially.
 
-    $("#combatOverlay").hide();
+
 
     const theSpire = new TowerOfFloors("The Spire");
     theSpire.assembleNewFloor(FloorData.floorLayouts()[0]);

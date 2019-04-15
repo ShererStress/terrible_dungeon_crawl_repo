@@ -12,8 +12,8 @@ mapArea {
 }
 
 #mapZone {
-  width: 404px;
-  height: 404px;
+  width: 4px;
+  height: 4px;
   background-color: black;
   position: absolute;
   top: 75px;
@@ -218,6 +218,7 @@ modal {
 #combatOverlay {
   background-color: rgba(80,0,0,0.6);
   z-index: 2;
+  display: none;
 }
 
 
