@@ -82,18 +82,17 @@ ul {
 }
 
 #actionList{
-  position: absolute;
+
 
   width: 100%;
 }
 
 .alignListBottom {
+  position:absolute;
+  position: absolute;
   bottom: 0;
 }
 
-.alignListTop {
-  top: 0;
-}
 
 #combatLog {
   /* height: 100px; */

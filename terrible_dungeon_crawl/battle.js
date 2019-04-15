@@ -235,7 +235,7 @@ $(()=>{ //Start jQuery
       } else {
         addToCombatLog(`${this.name} was slain before it could act.`)
       }
-      this.currentBattlefield.checkToEndTurn();
+      this.currentBattlefield.combatPhaseController();
     };
 
     //Remove all threat from one target, then attack something
@@ -247,7 +247,7 @@ $(()=>{ //Start jQuery
       } else {
         addToCombatLog(`${this.name} was slain before it could act.`)
       }
-      this.currentBattlefield.checkToEndTurn();
+      this.currentBattlefield.combatPhaseController();
     }
 
 
@@ -401,12 +401,11 @@ $(()=>{ //Start jQuery
             $combatButton.text(`Next action: ${buttonOwner.name}`)
             $combatButton.on("click", function() {
               //This order is VERY important! The next button needs to be shown.
-              $combatButton.next().prop("disabled", false);
               $combatButton.remove();
               buttonOwner.actionThreatenAttack(targetArray[i],1);
-              //buttonOwner.actionThreatenAttack(buttonOwner.currentBattlefield.enemyList[i],1);
 
             });//End the combat button definition
+
           } else if (actionType === "disengageAttack"){ //Disengage, then attack
             addToCombatLog(`${buttonOwner.name} plans to disengage from ${targetArray[i].name}`);
             //addToCombatLog(`${buttonOwner.name} plans to disengage from ${buttonOwner.currentBattlefield.enemyList[i].name}`);
@@ -414,14 +413,12 @@ $(()=>{ //Start jQuery
             $combatButton.text(`Next action: ${buttonOwner.name}`)
             $combatButton.on("click", function() {
               //This order is VERY important!
-              $combatButton.next().prop("disabled", false);
               $combatButton.remove();
               buttonOwner.actionDisengageAttack(targetArray[i]);
-              //buttonOwner.actionDisengageAttack(buttonOwner.currentBattlefield.enemyList[i]);
 
             });//End the combat button definition
           }
-          $combatButton.prop("disabled", true);
+          $combatButton.css("display", "none");
           $("#actionList").append($combatButton);
 
           $(`#enemy${targetID}Block`).css({"border-color":"#5e5542","background-color":"#e5c990"});
@@ -694,22 +691,28 @@ class Battlefield {
   planningPhaseController() {
     //make array [creature, perception], ordered by LOWEST perception to HIGHEST (planning later lets you see what everyone else is doing before you decide)
     if(this.combatState === 1){
+      $("#initativeOrderList").empty();
+      $("#actionList").empty();
       for(let i = 0; i < this.playerCharacterList.length; i++) {
         let currentPlayer = this.playerCharacterList[i];
-        let perceptionRoll = currentPlayer.perception + (Math.random()*5);
-        currentPlayer.initRoll = currentPlayer.initiative + Math.floor((Math.random()*5));
+        let perceptionRoll = currentPlayer.perception + (Math.random()*20);
+        currentPlayer.initRoll = currentPlayer.initiative + Math.floor((Math.random()*20));
         this.perceptionList.push([currentPlayer,perceptionRoll]);
+        $("#initativeOrderList").append($("<h5>").text(`${currentPlayer.name} - Initiative: ${currentPlayer.initRoll}`));
       }
       for(let i = 0; i < this.enemyList.length; i++) {
         let currentFoe = this.enemyList[i];
-        let perceptionRoll = currentFoe.perception + (Math.random()*5);
-        currentFoe.initRoll = currentFoe.initiative + Math.floor((Math.random()*5));
+        let perceptionRoll = currentFoe.perception + (Math.random()*20);
+        currentFoe.initRoll = currentFoe.initiative + Math.floor((Math.random()*20));
         this.perceptionList.push([currentFoe,perceptionRoll]);
+        $("#initativeOrderList").append($("<h5>").text(`${currentFoe.name} - Initiative: ${currentFoe.initRoll}`));
       }
       //the random number should resolve ties randomly... I hope
       this.perceptionList.sort(function(a,b){return (a[1] - (b[1]+(Math.random()*0.2-0.1)))});
       this.combatState = 2;
     }
+    console.log("perceptionList");
+    console.log(this.perceptionList);
     //check the first index in the array, and call the correct methods for a turn to be created. Remove that index.
     if(this.perceptionList.length > 0) {
       //Add a function here to sort the initiative list as it is built, to allow the player to plan more effectivly
@@ -726,8 +729,7 @@ class Battlefield {
     } else { //All turns submitted. Clear the command list and show the first action!
       $("#commandList").empty()
       //This should eventually call combatPhaseController() instead!
-      $("#actionList").children().eq(0).prop("disabled", false);
-      $("#actionList").removeClass("alignListBottom");
+      this.combatPhaseController();
     }
   };
 
@@ -750,22 +752,26 @@ class Battlefield {
         addToCombatLog(`${whosTurn.name} is planning to threaten ${selectedTarget.name} with ${whosTurn.weapon}`);
         $combatButton.text(`Initiative ${whosTurn.initRoll}: ${whosTurn.name} - threaten ${selectedTarget.name}`);
         $combatButton.on("click", function() {
-          //This order is VERY important
-          $combatButton.next().prop("disabled", false);
-          $combatButton.remove();
+          //This order is VERY important - don't delete the button until everything has been completed!
+
           whosTurn.actionThreatenAttack(selectedTarget,1);
+          $combatButton.remove();
+          whosTurn.currentBattlefield.combatPhaseController();
+
         });
-        $combatButton.prop("disabled", true);
+        $combatButton.css("display", "none");
         $("#actionList").append($combatButton);
         //this.actionsRemaining++;
       }
 
-    //This will have to be moved when initiative is added. Make the first button visible once all commands are in place.
+    //enemy turn planned - back to the planning phase controller
     this.planningPhaseController();
   };
 
   //Determines the order in which the actions buttons are accessed.
   combatPhaseController() {
+    console.log("Make next button visible!");
+    $("#actionList").children().eq(0).css("display", "block");
     //The combatButtons need Ids for this function to access.
     // "combatButtonenemy${i}" or "combatButtonpc${i}"
     //Make the actionButtons accessible one at a time in the correct order
@@ -773,6 +779,7 @@ class Battlefield {
     //Once all actions are complete, call resolveCombat();
 
     //Eventually, remove checkToEndturn()
+    this.checkToEndTurn();
   }
 
 
@@ -781,9 +788,10 @@ class Battlefield {
     //console.log("checking end of turn");
     //console.log($("#actionList").children().length);
     //this.actionsRemaining--;
+    console.log("remianing actions:");
+    console.log($("#actionList").children().length);
     if($("#actionList").children().length <= 0) {
       //this.actionsRemaining = 0;
-      $("#actionList").addClass("alignListBottom");
       this.resolveCombat();
     }
   }
@@ -813,16 +821,16 @@ class Battlefield {
     }
 
     if(deadFoes === this.enemyList.length) { //Players win
-      addToCombatLog("---")
+      addToCombatLog("---");
       addToCombatLog("No foes remain");
       this.combatCleanUp();
     } else if (deadPCs === this.playerCharacterList.length) { //Players lose
-      addToCombatLog("---")
+      addToCombatLog("---");
       addToCombatLog("The adventurers have fallen");
       addToCombatLog("GAME OVER")
     } else {
-      addToCombatLog("---")
-      addToCombatLog("A new round begins")
+      addToCombatLog("---");
+      addToCombatLog("A new round begins");
       this.combatState = 1;
       this.currentPlayerCharacter = 0;
       this.planningPhaseController();
