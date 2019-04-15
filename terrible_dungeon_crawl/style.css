@@ -93,6 +93,9 @@ ul {
   bottom: 0;
 }
 
+.permaHidden {
+  display: none;
+}
 
 #combatLog {
   /* height: 100px; */
