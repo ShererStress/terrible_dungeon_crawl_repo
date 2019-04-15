@@ -11,6 +11,55 @@ Line of sight? Just cardinal directions?
 save/load seems feasible, given setItem and getItem using local storage
 simple map data, and character data seem prudent to save
 */
+
+//Global classes - accessible by ALL, cannot access anything else due to scope.
+//No messing with jQuery, and no passing things directly through this to the other script!
+class mapBattleCommunicator {
+  constructor() {
+    //The list of player characters for combat
+    this.linkedAdventurerList = [];
+    this.linkedBattlefield;
+  }
+  //Add a PC to the list
+  commAddTolinkedAdventurerList(adventurerIn) {
+    this.linkedAdventurerList.push(adventurerIn);
+    console.log(this.linkedAdventurerList);
+  };
+
+  commLinkToBattlefield(battlefieldIn) {
+    this.linkedBattlefield = battlefieldIn;
+  }
+
+  //-1 for full heal
+  commRemoveWoundsSingleTarget(targetAdventurerIndex = 0, woundRecoveryAmount = 0) {
+    let adventurerToHeal = this.linkedAdventurerList[targetAdventurerIndex];
+    if(woundRecoveryAmount !== -1) {
+      adventurerToHeal.restoreWounds(woundRecoveryAmount,0)
+    } else {
+      adventurerToHeal.restoreWounds(0,1);
+    }
+    this.linkedBattlefield.updateHealthValues();
+  };
+  //-1 for full heal
+  commRemoveWoundsAllTargets(woundRecoveryAmount = 0) {
+    console.log("Healing everyone!");
+    for (let i = 0; i < this.linkedAdventurerList.length; i++) {
+      this.commRemoveWoundsSingleTarget(i,woundRecoveryAmount);
+    }
+  };
+
+  //Grabs info from the PCs statblocks and returns the values - NOT the references.
+  commReturnPartyStatus() {
+    console.log("nothing happening here yet");
+  }
+
+} //End mapBattleCommunicator class
+
+
+//Define this here? I need both scripts to be able to see it.
+const mbComms = new mapBattleCommunicator();
+
+
 $(()=>{ //Start jQuery
 
 //////Button listeners
@@ -36,12 +85,13 @@ let mapPrototype5 = [
 ];
 
 let floorOne = [
-  [1,1,1,1,1],
+  ["1_t_0",1,1,1,1],
   [0,0,1,0,1],
   [0,0,1,1,1],
   ["1_sU_4.1",1,0,0,1],
   [1,1,1,1,1]
 ];
+//Town 0.0
 //Up: 3.0
 
 let floorTwo = [
@@ -294,22 +344,10 @@ class GroupLocation {
       return;
     }
     //No movement necissary
-    let currentLocation = this.currentFloor.mapData[rowIn][colIn];
-
+    let currentLocationOnMap = this.currentFloor.mapData[rowIn][colIn];
     if((rowIn === this.rowLocation) && (colIn === this.colLocation)) {
       console.log("Searching the room we are in...");
-      if(currentLocation[5].sU !== undefined) {
-        console.log("...found some stairs! They go up!");
-        let newLocation = currentLocation[5].sU.split(".");
-        this.changeFloors(1,Number.parseInt(newLocation[0]),Number.parseInt(newLocation[1]));
-      }
-      if(currentLocation[5].sD !== undefined) {
-        console.log("...found some stairs! They go down!");
-        let newLocation = currentLocation[5].sD.split(".");
-        this.changeFloors(-1,Number.parseInt(newLocation[0]),Number.parseInt(newLocation[1]));
-      }
-      //if there is something in the room, trigger an interaction here!
-
+      this.searchLocation(currentLocationOnMap);
       return;
     }
     //This returns a string
@@ -329,12 +367,13 @@ class GroupLocation {
     }
   };
 
+
   //Used to control the rate of movement, instead of appearing to teleport there - I DID IT
   takeStep() {
     //causes the group to move
     this.changePosition(parseInt(this.currentDirections.shift()));
     //checks if the movement is complete - can probably put the 'goToCombat' trigger here to interrupt movement consistently
-    if(Math.random() > .5) {
+    if(Math.random() > .75) {
       this.currentDirections.length = 0;
       console.log("BATTLETIME");
       $("#combatOverlay").show();
@@ -346,6 +385,29 @@ class GroupLocation {
         theGroup.takeStep(); }, 100); //In ms, the delay between moves
       }
     };
+
+    //Used to check the current room the group is in, and possibly do something if there is something in the room.
+    searchLocation(currentLocationOnMap) {
+      console.log(currentLocationOnMap[5]);
+        if(currentLocationOnMap[5].sU !== undefined) {
+          console.log("...found some stairs! They go up!");
+          let newLocation = currentLocationOnMap[5].sU.split(".");
+          this.changeFloors(1,Number.parseInt(newLocation[0]),Number.parseInt(newLocation[1]));
+        }
+        if(currentLocationOnMap[5].sD !== undefined) {
+          console.log("...found some stairs! They go down!");
+          let newLocation = currentLocationOnMap[5].sD.split(".");
+          this.changeFloors(-1,Number.parseInt(newLocation[0]),Number.parseInt(newLocation[1]));
+        }
+        if(currentLocationOnMap[5].t !== undefined) {
+          mbComms.commRemoveWoundsAllTargets(-1);
+          console.log("Heading back to town.");
+        }
+        //if there is something in the room, trigger an interaction here!
+
+
+    };
+
 
     //Move up or down a floor.
     changeFloors(directionIn, destinationRow, destinationCol) {
@@ -436,6 +498,9 @@ class GroupLocation {
             }
             if(arrayIn[i][j][5].sU !== undefined) {
               roomSymbol += "S&#8593";
+            }
+            if(arrayIn[i][j][5].t !== undefined) {
+              roomSymbol += "T";
             }
             $newSquare.html(roomSymbol);
           }
@@ -654,19 +719,7 @@ class GroupLocation {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-  //generatePath(theSpire.floorList[0].mapData, 2, 2, 0, 4);
+  $("#combatOverlay").hide();
 
   const theSpire = new TowerOfFloors("The Spire");
   theSpire.assembleNewFloor(FloorData.floorLayouts()[0]);
@@ -677,53 +730,4 @@ class GroupLocation {
 
   const theParty = new GroupLocation(theSpire,0,0);
 
-  //displayMap(theParty.currentFloor.mapData);
-
-  $("#combatOverlay").hide();
-
-
 }); //End jQuery
-
-
-
-
-  //generatePath(theSpire.floorList[0].mapData, 0, 0, 7, 8);
-
-  //theParty.moveToLocation(7, 8)
-
-  /*
-  const testFloor = new FloorData("test", FloorData.floorLayouts()[0]);
-
-  const theNewParty = new overconfidentGroup(testFloor,2,2);
-  //testFloor.showFullMap();
-  //testFloor.showMap();
-
-
-  theParty.changePosition(1);
-  theParty.changePosition(1);
-
-  theParty.changePosition(3);
-  theParty.changePosition(0);
-  theParty.changePosition(0);
-  theParty.changePosition(3);
-  theParty.changePosition(3);
-  theParty.changePosition(3);
-
-
-  theNewParty.checkMovementOptions();
-  theNewParty.changePosition(1);
-  theNewParty.checkMovementOptions();
-
-
-  const theSpire = new TowerOfFloors("The Spire");
-
-  theSpire.assembleNewFloor(FloorData.floorLayouts()[0]);
-  theSpire.assembleNewFloor(FloorData.floorLayouts()[2]);
-  theSpire.assembleNewFloor(FloorData.floorLayouts()[1]);
-  theSpire.assembleNewFloor(FloorData.floorLayouts()[3]);
-  theSpire.assembleNewFloor(FloorData.floorLayouts()[0]);
-
-  //theSpire.listFloors();
-  theSpire.listFloorsWithMap();
-  theSpire.floorList[2].showFullMap();
-  */

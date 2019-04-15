@@ -375,6 +375,20 @@ $(()=>{ //Start jQuery
       }
     };
 
+    //'Globallly used' methods - called by the global class(es?)
+    restoreWounds(amountRecovered = 0, maxRecoveryBool = 0) {
+      if(maxRecoveryBool === 1) {
+        this.wounds = this.maxWounds;
+        console.log("Full health!");
+      } else {
+        this.wounds = Math.min(this.maxWounds, this.wounds + amountRecovered);
+      }
+      this.fatigue = this.wounds;
+      console.log(`${this.name} is at ${this.wounds} wounds.`);
+    }
+
+
+
 
   } //End of Adventurer class
 
@@ -853,24 +867,24 @@ $(()=>{ //Start jQuery
 
   //Run 'Stuff'
 
-
+  let quake = new ForceOfNature();
 
   let garzmok = new Adventurer("Garzmok");
   let runa = new Adventurer("Runa");
-  let partyOne = new PlayerGroup();
-  let quake = new ForceOfNature();
 
+  let partyOne = new PlayerGroup();
   partyOne.addPC(garzmok);
   partyOne.addPC(runa);
 
+  mbComms.commAddTolinkedAdventurerList(garzmok);
+  mbComms.commAddTolinkedAdventurerList(runa);
+
   let fightOne = new Battlefield(partyOne);
+  mbComms.commLinkToBattlefield(fightOne);
 
   fightOne.startCombat();
-
   quake.getExternalData();
 
-
-  // $("#combatOverlay").css("display","none");
 
 
 
