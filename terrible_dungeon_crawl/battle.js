@@ -549,7 +549,7 @@ class Battlefield {
   startCombat() {
 
     //Decides on and generates a number of foes to fight. Update to pull information from the map side!
-    let numberOfFoes = Math.floor(Math.random()*3)+1;
+    let numberOfFoes = Math.floor(Math.random()*4)+1;
     for (let i = 0; i < numberOfFoes; i++) {
       let newEnemy = new Creature(`RUNELORD${i+1}`, " a glaive", i+1);
       this.enemyList.push(newEnemy);
@@ -772,8 +772,9 @@ class Battlefield {
           //This order is VERY important - don't delete the button until everything has been completed!
 
           console.log(`Turn: ${whosTurn.name}`);
-          whosTurn.actionThreatenAttack(selectedTarget,1);
           $combatButton.remove();
+          whosTurn.actionThreatenAttack(selectedTarget,1);
+
           //whosTurn.currentBattlefield.combatPhaseController();
 
         });
@@ -918,14 +919,15 @@ class Battlefield {
   };
 
   //Draws the lines that indicate who threatens who - I'm glad this works, because the game REALLY needs them to make sense
-  //These values will have to change with responsiveness...
+  //These values will have to change with responsiveness... oh boy!
   drawThreatLines() {
     let $drawArea = $("#centerZone").children().eq(0);
     $drawArea.empty();
     let numberPCs = this.playerCharacterList.length;
     let numberEnemies = this.enemyList.length;
-    let yOneStart = Math.round(600/(numberPCs+1));
-    let yTwoStart = Math.round(600/(numberEnemies+1))
+
+    let yOneStart = Math.round(400-100*numberPCs);
+    let yTwoStart = Math.round(375-75*numberEnemies);
     //Assuming default height of 600px, width of 300px
     for(let i = 0; i < this.playerCharacterList.length; i++) {
       let currentCharThreat = this.playerCharacterList[i].threatenedFoes;
