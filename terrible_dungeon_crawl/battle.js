@@ -23,7 +23,7 @@ $(()=>{ //Start jQuery
   //The basis for most in-game creatures
   //Only uses vigor for health - no wounds
   class Creature {
-    constructor(nameIn = "RUNELORD", weaponDescriptor = "a glaive") {
+    constructor(nameIn = "RUNELORD", weaponDescriptor = "a glaive", perceptionIn = 1) {
       this.name = nameIn;
       this.weapon = weaponDescriptor;
       //Array of enemies this creature is threatening
@@ -43,7 +43,9 @@ $(()=>{ //Start jQuery
       //Default damage reduction. Reduced by threat past threatThreshold.
       this.armor = 2;
 
-      //this.onesGroup; Not sure what this was used/planned for. Delete eventually?
+      //Used in determineing turn order.
+      this.perception= perceptionIn;
+      this.initiative;
 
       this.currentBattlefield; //Allows references to battlefield
       this.battlefieldId; //Used to refer to html element ids
@@ -252,7 +254,7 @@ $(()=>{ //Start jQuery
 
   //The adventurers! These are the player characters (PCs). Creatures with added button functionality, wounds, and other abilties/complexity
   class Adventurer extends Creature {
-    constructor(nameIn = "Garzmok", weaponIn = "a sword", woundsIn = 40, damageIn = 12, armorIn = 2, threatThIn = 2) {
+    constructor(nameIn = "Garzmok", weaponIn = "a sword", woundsIn = 40, damageIn = 12, armorIn = 2, threatThIn = 2, perceptionIn = 5) {
       super();
       this.name = nameIn;
       this.weapon = weaponIn;
@@ -266,6 +268,7 @@ $(()=>{ //Start jQuery
       this.armor = armorIn;
       this.threatThreshold = threatThIn;
       this.aliveBool = true;
+      this.perception = perceptionIn;
     };
 
     //Damage is applied to vigor before wounds, but if enough vigor is lost in a single hit, some vigor damage is converted into wound 'chip damage'.
@@ -273,7 +276,7 @@ $(()=>{ //Start jQuery
     takeDamage(incomingDamage) {
       let damageTaken = Math.max(incomingDamage-this.calculateDR(),1); //Always take 1 damage
       //This is the wound chip damage
-      let woundChipDamage = Math.floor(damageTaken/(Math.floor(this.maxWounds/10)));
+      let woundChipDamage = Math.floor(damageTaken/5);
       damageTaken -= woundChipDamage; //Vigor damage is CONVERTED to wound chip damage
       let vigorDamageTaken = Math.min(damageTaken, this.vigor); //no negative vigor allowed
       //Make sure all the damage is properly accounted for.
@@ -506,6 +509,8 @@ class Battlefield {
   //A battle needs some PCs to control, might as well assign them in the constructor.
   constructor(playerGroupIn) {
     //Used by the clas methods to check where we are in the combat loop
+    //0 -> not started; 1 -> started, planning phase not yet begun;
+    //2-> planning phase in progress; 3-> planning complete, running through actions (possibly cleanup)
     this.combatState = 0;
     //The list of adventurers in the party.
     this.attachedPlayerGroup = playerGroupIn; //Use when adding new party member?
@@ -551,7 +556,7 @@ class Battlefield {
     //Decides on and generates a number of foes to fight. Update to pull information from the map side!
     let numberOfFoes = Math.floor(Math.random()*3)+1;
     for (let i = 0; i < numberOfFoes; i++) {
-      let newEnemy = new Creature(`RUNELORD${i+1}`);
+      let newEnemy = new Creature(`RUNELORD${i+1}`, " a glaive", i+1);
       this.enemyList.push(newEnemy);
     }
     //Makes the battlefield aware of the foes, and them aware of it.
@@ -567,9 +572,12 @@ class Battlefield {
 
   //Adds dynamic html elements. Call once at start of combat, but can also be used to refresh everything about all statblocks.
   displayBattlefield(initialFight = false) {
+    console.log("display!");
     this.createPCStatBlocks();
     this.createEnemyStatBlocks();
+
     if(!initialFight) { //Avoids priming a player turn at the start of the game
+      this.planningPhaseController();
       this.primePlayerTurn();
     }
 
@@ -683,9 +691,36 @@ class Battlefield {
     }
   }
 
+
+  //Determines the order of who inputs commands, and generates buttons or calls 'enemyTurn()' until all creatures have chosen an action
+  planningPhaseController() {
+    //make array [creature, perception], ordered by LOWEST perception to HIGHEST (planning later lets you see what everyone else is doing before you decide)
+    if(this.combatState === 1){
+      for(let i = 0; i < this.playerCharacterList.length; i++) {
+        this.perceptionList.push([this.playerCharacterList[i],this.playerCharacterList[i].perception]);
+      }
+      for(let i = 0; i < this.enemyList.length; i++) {
+        this.perceptionList.push([this.enemyList[i],this.enemyList[i].perception]);
+      }
+      //the random number should resolve ties randomly... I hope
+      this.perceptionList.sort(function(a,b){return (a[1] - (b[1]+(Math.random()*0.2-0.1)))});
+      console.log(this.perceptionList);
+      this.combatState = 2;
+    }
+    //check the first index in the array, and call the correct methods for a turn to be created. Remove that index.
+    let nextCharacter = this.perceptionList.shift()[0];
+    console.log(nextCharacter);
+    if(nextCharacter instanceof Adventurer) {
+      console.log("It's a PC!");
+    } else {
+      console.log("It's an enemy!");
+    }
+
+  };
+
   //Creates buttons for one of the characters the player controls
   //Each time it is called, it applies to the next character in the group; calls playerTurnComplete each time
-  primePlayerTurn() {
+  primePlayerTurn(whichTurn) {
     //Index for each player
     //console.log("Current turn: " + this.playerCharacterList[this.currentPlayerCharacter].name);
 
@@ -796,8 +831,7 @@ class Battlefield {
 
   //
   combatCleanUp() {
-    console.log("cleanUp called");
-
+    console.log("Combat cleanup");
     //make a new button (leaveBattle) that does the following - allows the player to see the outcome BEFORE leaving the battle screen
     let theBattlefield = this;
 
@@ -1014,9 +1048,9 @@ function combatLoop() {
 
 let quake = new ForceOfNature();
 nameIn = "Garzmok", weaponIn = "a sword", woundsIn = 40, damageIn = 12, armorIn = 2, threatThIn = 2
-let garzmok = new Adventurer("Garzmok", "a greatsword", 55, 14, 1, 2);
-let runa = new Adventurer("Runa", "unarmed strikes", 40, 10, 4, 3);
-let talathel = new Adventurer("Talathel", "a rapier", 35, 18, 2, 1);
+let garzmok = new Adventurer("Garzmok", "a greatsword", 55, 14, 1, 2,3);
+let runa = new Adventurer("Runa", "unarmed strikes", 40, 10, 4, 3,5);
+let talathel = new Adventurer("Talathel", "a rapier", 35, 18, 2, 1,2);
 
 let partyOne = new PlayerGroup();
 partyOne.addPC(garzmok);
@@ -1029,7 +1063,6 @@ let fightOne = new Battlefield(partyOne);
 mbComms.commLinkToBattlefield(fightOne);
 
 quake.getExternalData();
-
 
 
 
