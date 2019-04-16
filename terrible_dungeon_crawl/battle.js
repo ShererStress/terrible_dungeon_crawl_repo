@@ -182,17 +182,20 @@ $(()=>{ //Start jQuery
 
     //Totals the amount of threat the creature is encountering and updates the overwhelemedState based on the result. Call after changing threat! Returns total threat.
     updateTotalThreat() {
+      console.log(`Checking total threat of ${this.name}`);
       let totalProblems = 0;
       for(let i = 0; i<this.threatenedFoes.length; i++) {
         totalProblems += this.threatenedFoes[i][1];
       }
       this.totalThreat = totalProblems;
+      console.log(this.totalThreat);
       if(this.totalThreat >= this.threatThreshold) {
         this.overwhelmedState = 1;
         if (this.totalThreat > this.threatThreshold) {
           this.overwhelmedState = 2;
         }
       } else {
+        console.log(`${this.name } is no longer overwhelmed`);
         this.overwhelmedState = 0;
       }
       //Now update everything's Atk/Arm/Threat values
@@ -203,16 +206,25 @@ $(()=>{ //Start jQuery
 
     //Loops through this creature's threat array and removes itself from other creatures' threat lists. Then deletes this creature's threat list. Used in case of withdraw or death.
     clearAllThreat() {
+      console.log(`Clearing all threat on ${this.name}`);
       while(this.threatenedFoes.length > 0) {
         this.clearSingleThreat(this.threatenedFoes[0][0]);
       }
       this.updateTotalThreat();
       this.currentBattlefield.drawThreatLines();
+      for(let i = 0; i < this.currentBattlefield.enemyList.length; i++) {
+        console.log(`Checking that all threat was removed from ${this.name}`);
+        console.log(this.currentBattlefield.enemyList[i].threatenedFoes);
+      }
+
+
     };
 
+    //Rebuild - clear it form this list, then have it run the same function with reversed parameters
 
     //Removes this creature from a single foe's threat list, and this from the foe's list.
-    clearSingleThreat(targetCreature, startIndex) {
+    /*
+    clearSingleThreat(targetCreature) {
       //remove this from foe's list
       let targetCreatureThreatList = targetCreature.threatenedFoes;
       for (let j = 0; j < targetCreatureThreatList.length; j++) {
@@ -225,8 +237,30 @@ $(()=>{ //Start jQuery
       for (let j = 0; j < this.threatenedFoes.length; j++) {
         if(this.threatenedFoes[j][0] === targetCreature) {
           this.threatenedFoes.splice(j,1);
+          this.threatenedFoes[j][0].updateTotalThreat();
         }
       }
+
+      this.updateTotalThreat();
+      this.currentBattlefield.drawThreatLines();
+    };
+`   */
+    clearSingleThreat(targetCreature, reciprocate = 1) {
+      //remove foe from this one's list
+      console.log(`Removing ${targetCreature.name} from ${this.name}`);
+      console.log(`Initial List ${this.name}:`);
+      console.log(this.threatenedFoes);
+      for (let j = 0; j < this.threatenedFoes.length; j++) {
+        if(this.threatenedFoes[j][0] === targetCreature) {
+          if(reciprocate === 1) {
+            this.threatenedFoes[j][0].clearSingleThreat(this,0);
+          }
+          this.threatenedFoes.splice(j,1);
+          break;
+        }
+      }
+      console.log(`Final List ${this.name}:`);
+      console.log(this.threatenedFoes);
 
       this.updateTotalThreat();
       this.currentBattlefield.drawThreatLines();
@@ -280,12 +314,12 @@ $(()=>{ //Start jQuery
       let currentThreat = this.updateTotalThreat();
       if(this.aliveBool && currentThreat === 0) {
         addToCombatLog(`${this.name} conjured an earthquake underneath the foes!`)
-        this.attachedAPI.getExternalData(function(returnedMag) {
+        this.attachedAPI.getExternalData(function(returnedMagnitude) {
 
           for(let i = 0; i < conjuringCreature.currentBattlefield.enemyList.length; i++) {
             let targetCreature = conjuringCreature.currentBattlefield.enemyList[i];
             if (targetCreature.aliveBool) {
-              targetCreature.takeDamage(Math.floor(returnedMag*(conjuringCreature.magic/3))); //change to scale off of magic
+              targetCreature.takeDamage(Math.floor(returnedMagnitude*(conjuringCreature.magic/3)));
             }
           }
           conjuringCreature.currentBattlefield.combatPhaseController();
@@ -446,7 +480,9 @@ $(()=>{ //Start jQuery
       let highlightIdList = [];
       if(targetType === "foesAoE") {
         for(let i = 0; i < this.currentBattlefield.enemyList.length; i++) {
-          highlightIdList.push(this.currentBattlefield.enemyList.slice(i,i+1)[0].battlefieldId);
+          if(this.currentBattlefield.enemyList[i].aliveBool) {
+            highlightIdList.push(this.currentBattlefield.enemyList.slice(i,i+1)[0].battlefieldId);
+          }
         }
       }
 
@@ -535,7 +571,6 @@ $(()=>{ //Start jQuery
           $(`#${pcID}Block`).css({"border-color":"#5e5542","background-color":"#e5c990"});
         });
 
-        console.log(highlightIdList);
 
         for (let j = 0; j < highlightIdList.length; j ++) {
           $planningButton.on("mouseenter", function() {
@@ -598,17 +633,17 @@ class Enemy extends Creature {
     //Change to a floor-by-floor list? Fewer wonky equations needed.
     //possibly add something here to let players know what enemy stats are after encountering them a few times?
     //Names: ~19 character max. Maybe fewer?
-    //Name/weapon/Vigor/Attack/Armor/Threat/Per/Init
+    //Name/weapon/Vigor/Attack/magic/Armor/Threat/Per/Init
     let enemyDataArray = [
-      ["Shriveled Ghoul", "its claws", 8, 9, 1, 2, 0, 4],
-      ["Rusted Sentinel", "a dulled spear", 13, 8, 4, 1, 0, 0,],
-      ["Warg", "its toothy maw", 16, 10, 2, 1, 8, 6],
-      ["Animated Skeleton", "a rusted blade", 18, 10, 3, 3, 0, 2],
-      ["Brass Sentinel", "a spear", 25, 11, 5, 1, 0, 0],
-      ["Pact-bound Abyssal", "a jagged claw", 22, 16, 3, 4, 6, 6],
-      ["Risen Adventurer", "a longsword", 28, 14, 4, 3, 12, 4],
-      ["Unholy Cleric", "a cursed mace", 24, 15, 5, 2, 5, 3],
-      ["Steel Sentinel", "a halberd", 36, 16, 8, 1, 0, 0],
+      ["Shriveled Ghoul", "its claws", 8, 9, 0, 1, 2, 0, 4],
+      ["Rusted Sentinel", "a dulled spear", 13, 8, 0, 4, 1, 0, 0,],
+      ["Warg", "its toothy maw", 16, 10, 0, 2, 1, 8, 6],
+      ["Animated Skeleton", "a rusted blade", 18, 10, 0, 3, 3, 0, 2],
+      ["Brass Sentinel", "a spear", 25, 11, 2, 5, 1, 0, 0],
+      ["Pact-bound Abyssal", "a jagged claw", 22, 16, 3, 3, 4, 6, 6],
+      ["Risen Adventurer", "a longsword", 28, 14, 1, 4, 3, 12, 4],
+      ["Unholy Cleric", "a cursed mace", 24, 15, 4, 5, 2, 5, 3],
+      ["Steel Sentinel", "a halberd", 36, 16, 3, 8, 1, 0, 0],
     ];
     return enemyDataArray[creatureIndexIn];
   };
@@ -617,7 +652,7 @@ class Enemy extends Creature {
 
     let enemyData = Enemy.returnPreBuiltCreature(creatureIndexIn);
 
-    super(`${enemyData[0]}${nameAddition}`, enemyData[1], enemyData[2], enemyData[3], enemyData[4], enemyData[5], enemyData[6], enemyData[7]);
+    super(`${enemyData[0]}${nameAddition}`, enemyData[1], enemyData[2], enemyData[3], enemyData[4], enemyData[5], enemyData[6], enemyData[7], enemyData[8]);
   };
 
 
@@ -698,7 +733,7 @@ class Battlefield {
         enemyNameNumbers[`${enemyTypeIndex}`] = 1;
       } else {
         enemyNameNumbers[`${enemyTypeIndex}`]++;
-        newEnemy = new Enemy(enemyTypeIndex, enemyNameNumbers[` ${enemyTypeIndex}`]);
+        newEnemy = new Enemy(enemyTypeIndex, ` ${enemyNameNumbers[`${enemyTypeIndex}`]}`);
       }
       //let newEnemy = new Enemy(enemyTypeIndex,`${i+1}`);
       this.enemyList.push(newEnemy);
@@ -893,6 +928,11 @@ class Battlefield {
 
 
       let nextCharacter = this.perceptionList.shift()[0];
+
+      console.log("New turn:");
+      console.log(`${nextCharacter.name}`);
+      console.log(`${nextCharacter.threatenedFoes}`);
+
       if(nextCharacter instanceof Adventurer) {
         //Creates a combatButton for one of the characters the player controls
         nextCharacter.createTurnOptionQuery(0,-1);
@@ -913,7 +953,7 @@ class Battlefield {
   //Decides what the enemies do. Probably random for the most part, for my sake. Creates a button that executes the enemy's action when clicked by the player. For now, only engages the PCs.
   enemyTurn(whosTurn) {
     if(whosTurn.aliveBool) {
-
+      whosTurn.updateTotalThreat();
       let validTargets = [];
       for(let i =0; i < this.playerCharacterList.length; i++) {
         if(this.playerCharacterList[i].aliveBool) {
