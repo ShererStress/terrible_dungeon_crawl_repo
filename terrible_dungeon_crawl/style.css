@@ -149,8 +149,12 @@ div {
   display: none;
 }
 
+.levelUpBox {
+  display: none;
+}
+
 .centerTextbox{
-  background-color: white;
+  background-color: #e5c990;
 	height: 350px;
 	width: 550px;
 	border-radius: 3px;

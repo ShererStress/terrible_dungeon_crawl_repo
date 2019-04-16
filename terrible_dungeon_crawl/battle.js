@@ -20,6 +20,12 @@ every foe's engagement arrays
 
 $(()=>{ //Start jQuery
 
+  //Global Listeners
+  $("#levelUpButton").on("click", showLevelUp );
+  $("#closeLevelUpButton").on("click", hideLevelUp);
+
+
+
   //The basis for most in-game creatures
   //Only uses vigor for health - no wounds
   class Creature {
@@ -459,6 +465,13 @@ $(()=>{ //Start jQuery
       */
     };
 
+    alterMaxWounds(valueIn) {
+      this.maxWounds += valueIn;
+      this.restoreWounds(valueIn);
+    };
+
+
+
 
     //'Globallly used' methods - called by the global class(es?)
 
@@ -509,6 +522,8 @@ class Battlefield {
     this.combatState = 0;
     //The list of adventurers in the party.
     this.attachedPlayerGroup = playerGroupIn; //Use when adding new party member?
+    this.attachedPlayerGroup.connectedBattlefield = this;
+
     this.playerCharacterList = playerGroupIn.playerList;
     //The list of foes to fight in the current battle
     this.enemyList = [];
@@ -962,6 +977,7 @@ class Battlefield {
 class PlayerGroup {
   constructor() {
     this.playerList = []
+    this.connectedBattlefield;
   };
 
   addPC(characterIn) {
@@ -995,7 +1011,15 @@ class PlayerGroup {
     }
   };
 
-  //show/hide levelup modal
+  //Used in increase a character's maximum wounds. Called only in the map screen.
+  increaseHealth() {
+    let amount = 2;
+    for(let i = 0; i < this.playerList.length; i++) {
+      this.playerList[i].alterMaxWounds(amount);
+    }
+    this.updateMapHealthBlocks();
+    this.connectedBattlefield.updateHealthValues();
+  };
 
 
 
@@ -1056,22 +1080,26 @@ function clearCombatLog() {
 }
 
 
+//Used to show and hide the level up modal
+function showLevelUp() {
+  let $levelUpBoxElements = $(".levelUpBox");
+  $levelUpBoxElements.css("display", "block");
+};
+
+function hideLevelUp() {
+  let $levelUpBoxElements = $(".levelUpBox");
+  $levelUpBoxElements.css("display", "none");
+};
+
+
+
 //////
 
 
 
 
 
-//This is temporary - everything here will have to be broken down into separate functions (that are called using elements in the html)
-function combatLoop() {
 
-
-
-
-
-  console.log("DONE");
-
-} //End combatLoop function
 
 
 
@@ -1080,12 +1108,12 @@ function combatLoop() {
 let quake = new ForceOfNature();
 nameIn = "Garzmok", weaponIn = "a sword", woundsIn = 40, damageIn = 12, armorIn = 2, threatThIn = 2
 let garzmok = new Adventurer("Garzmok", "a greatsword", 55, 14, 1, 2,3);
-let daj = new Adventurer("Daj", "a longsword", 40, 10, 4, 3,5);
+//let daj = new Adventurer("Daj", "a longsword", 40, 10, 4, 3,5);
 let talathel = new Adventurer("Talathel", "a rapier", 35, 18, 2, 1,2);
 
 let partyOne = new PlayerGroup();
 partyOne.addPC(garzmok);
-partyOne.addPC(daj);
+//partyOne.addPC(daj);
 partyOne.addPC(talathel);
 partyOne.updateMapHealthBlocks();
 mbComms.commLinkToPlayerGroup(partyOne);
@@ -1094,6 +1122,8 @@ let fightOne = new Battlefield(partyOne);
 mbComms.commLinkToBattlefield(fightOne);
 
 quake.getExternalData();
+
+$("#increaseHealth").on("click", function() {partyOne.increaseHealth(); });
 
 
 
