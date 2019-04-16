@@ -331,4 +331,5 @@ roomDiv {
 .hidden {
   background-color: black;
   border: 2px solid black;
+  font-size: 0px;
 }

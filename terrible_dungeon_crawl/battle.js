@@ -29,7 +29,7 @@ $(()=>{ //Start jQuery
   //The basis for most in-game creatures
   //Only uses vigor for health - no wounds
   class Creature {
-    constructor(nameIn = "RUNELORD", weaponDescriptor = "a glaive", maxWoundsIn = 20, damageIn = 14, armorIn =2, threatThresholdIn = 3, perceptionIn = 1, initiativeIn = 3) {
+    constructor(nameIn = "RUNELORD", weaponDescriptor = "a glaive", maxWoundsIn = 20, damageIn = 14, magicIn = 3, armorIn =2, threatThresholdIn = 3, perceptionIn = 1, initiativeIn = 3) {
       //Used to identify the creature in logs and messages
       this.name = nameIn;
       this.weapon = weaponDescriptor;
@@ -39,6 +39,8 @@ $(()=>{ //Start jQuery
       this.vigor = this.maxWounds;
       //Default damage per attack. Reduced by threat.
       this.damage = damageIn;
+      //Damage factor used with API spells
+      this.magic = magicIn;
       //Default damage reduction. Reduced by threat past threatThreshold.
       this.armor = armorIn;
       //Limit to the amount of threat the creature can hold off before suffering greater penalites
@@ -273,13 +275,19 @@ $(()=>{ //Start jQuery
     };
 
     //Conjures an earthquake! Deals direct damage. Different structure due to API access delays.
-    conjureEarthquake(targetCreature) {
+    conjureEarthquake() {
       let conjuringCreature = this;
       let currentThreat = this.updateTotalThreat();
-      if(this.aliveBool && targetCreature.aliveBool && currentThreat === 0) {
-        addToCombatLog(`${this.name} conjured an earthquake near ${targetCreature.name}`)
+      if(this.aliveBool && currentThreat === 0) {
+        addToCombatLog(`${this.name} conjured an earthquake underneath the foes!`)
         this.attachedAPI.getExternalData(function(returnedMag) {
-          targetCreature.takeDamage(Math.floor(returnedMag*(conjuringCreature.damage/2))); //change to scale off of magic
+
+          for(let i = 0; i < conjuringCreature.currentBattlefield.enemyList.length; i++) {
+            let targetCreature = conjuringCreature.currentBattlefield.enemyList[i];
+            if (targetCreature.aliveBool) {
+              targetCreature.takeDamage(Math.floor(returnedMag*(conjuringCreature.magic/3))); //change to scale off of magic
+            }
+          }
           conjuringCreature.currentBattlefield.combatPhaseController();
         });
       } else if (!this.aliveBool) {
@@ -287,9 +295,6 @@ $(()=>{ //Start jQuery
         this.currentBattlefield.combatPhaseController();
       } else if (currentThreat > 0) {
         addToCombatLog(`${this.name} is being threatened and isn't able to concentrate on the spell!`);
-        this.currentBattlefield.combatPhaseController();
-      } else if (!targetCreature.aliveBool) {
-        addToCombatLog(`${targetCreature.name} is already dead. ${this.name} did not finish conjuring an earthquake.`);
         this.currentBattlefield.combatPhaseController();
       }
     };
@@ -299,7 +304,7 @@ $(()=>{ //Start jQuery
 
   //The adventurers! These are the player characters (PCs). Creatures with added button functionality, wounds, and other abilties/complexity
   class Adventurer extends Creature {
-    constructor(nameIn = "Garzmok", weaponIn = "a sword", maxWoundsIn = 40, damageIn = 12, armorIn = 2, threatThresholdIn = 2, perceptionIn = 5, initiativeIn = 5) {
+    constructor(nameIn = "Garzmok", weaponIn = "a sword", maxWoundsIn = 40, damageIn = 12, magicIn = 5, armorIn = 2, threatThresholdIn = 2, perceptionIn = 5, initiativeIn = 5) {
       super();
       this.name = nameIn;
       this.weapon = weaponIn;
@@ -310,6 +315,7 @@ $(()=>{ //Start jQuery
       //these are the same as in the creature class
       this.vigor = this.maxWounds;
       this.damage = damageIn;
+      this.magic = magicIn;
       this.armor = armorIn;
       this.threatThreshold = threatThresholdIn;
       this.aliveBool = true;
@@ -395,7 +401,7 @@ $(()=>{ //Start jQuery
       let targetArray = [];
 
       //move this into a new function?
-      let menuOptionText = [["Threaten a foe",1], ["Disengage from a foe",1], ["Withdraw from all foes",4], ["Conjure an Earthquake(!)",1]];
+      let menuOptionText = [["Threaten a foe",1], ["Disengage from a foe",1], ["Withdraw from all foes",4], ["Conjure an Earthquake(!)",5]];
       if(targetType === "actionMenu") { //Generate the list of actions that can be taken.
         for(let i = 0; i < menuOptionText.length; i++) {
           let $planningButton = $("<button>").addClass("commandButton");
@@ -433,10 +439,16 @@ $(()=>{ //Start jQuery
         }
       }
       //Adds this character to this list
-      if(targetType === "self") {
+      if(targetType === "self" || targetType === "foesAoE") {
         targetArray.push(this);
       }
-
+      //create list of additional ids of statblocks for highlighting during AoEs
+      let highlightIdList = [];
+      if(targetType === "foesAoE") {
+        for(let i = 0; i < this.currentBattlefield.enemyList.length; i++) {
+          highlightIdList.push(this.currentBattlefield.enemyList.slice(i,i+1)[0].battlefieldId);
+        }
+      }
 
       for(let i = 0; i < targetArray.length; i++) {
         let targetID = targetArray[i].battlefieldId;
@@ -450,7 +462,7 @@ $(()=>{ //Start jQuery
         } else if (actionType === "fullWithdraw"){
           $planningButton.text(`${this.name} - Withdraw`);
         } else if (actionType === "earthquake"){
-          $planningButton.text(`${this.name} - Conjure Earthquake: ${targetArray[i].name}`);
+          $planningButton.text(`${this.name} - Conjure Earthquake: All foes`);
         }
 
         $planningButton.on("click", function() {
@@ -488,13 +500,13 @@ $(()=>{ //Start jQuery
             });//End the combat button definition
 
           } else if (actionType==="earthquake") { //Back away from all foes. No attack.
-            addToCombatLog(`${buttonOwner.name} plans to conjure an earthquake near ${targetArray[i].name}!`);
-            $(`#initEntry${buttonOwner.battlefieldId}`).text(`Earthquake: ${targetArray[i].name}`);
+            addToCombatLog(`${buttonOwner.name} plans to conjure an earthquake!`);
+            $(`#initEntry${buttonOwner.battlefieldId}`).text(`Earthquake: All foes`);
             $combatButton.text(`Next action: ${buttonOwner.name}`)
             $combatButton.attr("id",`combatButton${buttonOwner.battlefieldId}`);
             $combatButton.on("click", function() {
               $combatButton.remove();
-              buttonOwner.conjureEarthquake(targetArray[i]);
+              buttonOwner.conjureEarthquake();
             });//End the combat button definition
 
           }
@@ -504,6 +516,11 @@ $(()=>{ //Start jQuery
 
           $(`#${targetID}Block`).css({"border-color":"#5e5542","background-color":"#e5c990"});
           $(`#${pcID}Block`).css({"border-color":"#5e5542","background-color":"#e5c990"});
+
+          for (let j = 0; j < highlightIdList.length; j ++) {
+            $(`#${highlightIdList[j]}Block`).css({"border-color":"#5e5542","background-color":"#e5c990"});
+          }
+
           //This character's turn is planned, move onto the next one
           buttonOwner.currentBattlefield.planningPhaseController();
         }); //End 'on click' for planningButton
@@ -517,8 +534,22 @@ $(()=>{ //Start jQuery
           $(`#${targetID}Block`).css({"border-color":"#5e5542","background-color":"#e5c990"});
           $(`#${pcID}Block`).css({"border-color":"#5e5542","background-color":"#e5c990"});
         });
+
+        console.log(highlightIdList);
+
+        for (let j = 0; j < highlightIdList.length; j ++) {
+          $planningButton.on("mouseenter", function() {
+            $(`#${highlightIdList[j]}Block`).css({"border-color":"blue","background-color":"#ffe7b5"});
+          });
+          $planningButton.on("mouseleave", function() {
+            $(`#${highlightIdList[j]}Block`).css({"border-color":"#5e5542","background-color":"#e5c990"});
+          });
+        }
+
         $("#commandList").append($planningButton)
       }
+
+
 
       //add a 'back' button to let the player reconsider their options.
       if(targetArray.length > 0) {
@@ -586,7 +617,7 @@ class Enemy extends Creature {
 
     let enemyData = Enemy.returnPreBuiltCreature(creatureIndexIn);
 
-    super(`${enemyData[0]} ${nameAddition}`, enemyData[1], enemyData[2], enemyData[3], enemyData[4], enemyData[5], enemyData[6], enemyData[7]);
+    super(`${enemyData[0]}${nameAddition}`, enemyData[1], enemyData[2], enemyData[3], enemyData[4], enemyData[5], enemyData[6], enemyData[7]);
   };
 
 
@@ -667,7 +698,7 @@ class Battlefield {
         enemyNameNumbers[`${enemyTypeIndex}`] = 1;
       } else {
         enemyNameNumbers[`${enemyTypeIndex}`]++;
-        newEnemy = new Enemy(enemyTypeIndex, enemyNameNumbers[`${enemyTypeIndex}`]);
+        newEnemy = new Enemy(enemyTypeIndex, enemyNameNumbers[` ${enemyTypeIndex}`]);
       }
       //let newEnemy = new Enemy(enemyTypeIndex,`${i+1}`);
       this.enemyList.push(newEnemy);
@@ -1216,8 +1247,8 @@ function hideLevelUp() {
 
 let quake = new ForceOfNature();
 
-let garzmok = new Adventurer("Garzmok", "a greatsword", 25, 10, 1, 2, 3, 7);
-let runa = new Adventurer("Runa", "unarmed strikes", 18, 7, 3, 3, 8, 3);
+let garzmok = new Adventurer("Garzmok", "a greatsword", 25, 10, 6, 1, 2, 3, 7);
+let runa = new Adventurer("Runa", "unarmed strikes", 18, 7, 12, 3, 3, 8, 3);
 //let talathel = new Adventurer("Talathel", "a rapier", 20, 8, 2, 1,2);
 
 garzmok.connectToAPI(quake);
