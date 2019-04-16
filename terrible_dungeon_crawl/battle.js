@@ -50,9 +50,9 @@ $(()=>{ //Start jQuery
 
       //A modified version of initiative used at the start of each round
       this.rolledInit;
-       //Allows references to battlefield
+      //Allows references to battlefield
       this.currentBattlefield;
-       //Used to refer to and generate html element IDs
+      //Used to refer to and generate html element IDs
       this.battlefieldId;
       //Array of enemies this creature is threatening
       this.threatenedFoes = [];
@@ -62,6 +62,7 @@ $(()=>{ //Start jQuery
       this.overwhelmedState = 0;
       //Is this alive? Updated upon death.
       this.aliveBool = true;
+      this.attachedAPI;
     };
 
 
@@ -177,7 +178,7 @@ $(()=>{ //Start jQuery
     };
 
 
-    //Totals the amount of threat the creature is encountering and updates the overwhelemedState based on the result. Call after changing threat!
+    //Totals the amount of threat the creature is encountering and updates the overwhelemedState based on the result. Call after changing threat! Returns total threat.
     updateTotalThreat() {
       let totalProblems = 0;
       for(let i = 0; i<this.threatenedFoes.length; i++) {
@@ -194,6 +195,7 @@ $(()=>{ //Start jQuery
       }
       //Now update everything's Atk/Arm/Threat values
       this.currentBattlefield.updateAttackArmorThreatValues();
+      return(this.totalThreat);
     };
 
 
@@ -257,7 +259,40 @@ $(()=>{ //Start jQuery
         addToCombatLog(`${this.name} was slain before it could act.`)
       }
       this.currentBattlefield.combatPhaseController();
-    }
+    };
+
+    //Removes all threat from foes.
+    actionWithdraw() {
+      if(this.aliveBool) {
+        addToCombatLog(`${this.name} backed away from the melee.`)
+        this.clearAllThreat();
+      } else {
+        addToCombatLog(`${this.name} was slain before it could act.`)
+      }
+      this.currentBattlefield.combatPhaseController();
+    };
+
+    //Conjures an earthquake! Deals direct damage. Different structure due to API access delays.
+    conjureEarthquake(targetCreature) {
+      let conjuringCreature = this;
+      let currentThreat = this.updateTotalThreat();
+      if(this.aliveBool && targetCreature.aliveBool && currentThreat === 0) {
+        addToCombatLog(`${this.name} conjured an earthquake near ${targetCreature.name}`)
+        this.attachedAPI.getExternalData(function(returnedMag) {
+          targetCreature.takeDamage(Math.floor(returnedMag*(conjuringCreature.damage/2))); //change to scale off of magic
+          conjuringCreature.currentBattlefield.combatPhaseController();
+        });
+      } else if (!this.aliveBool) {
+        addToCombatLog(`${this.name} was slain before it could act.`)
+        this.currentBattlefield.combatPhaseController();
+      } else if (currentThreat > 0) {
+        addToCombatLog(`${this.name} is being threatened and isn't able to concentrate on the spell!`);
+        this.currentBattlefield.combatPhaseController();
+      } else if (!targetCreature.aliveBool) {
+        addToCombatLog(`${targetCreature.name} is already dead. ${this.name} did not finish conjuring an earthquake.`);
+        this.currentBattlefield.combatPhaseController();
+      }
+    };
 
 
   } //End of Creature class
@@ -280,7 +315,14 @@ $(()=>{ //Start jQuery
       this.aliveBool = true;
       this.perception = perceptionIn;
       this.Initiative = initiativeIn;
+
+      //used to get data from an API
+      this.attachedAPI;
     };
+
+    connectToAPI(forceOfnatureIn) {
+      this.attachedAPI = forceOfnatureIn;
+    }
 
     //Damage is applied to vigor before wounds, but if enough vigor is lost in a single hit, some vigor damage is converted into wound 'chip damage'.
     //This also generates a message to let the player how much damage of each type was applied.
@@ -318,15 +360,21 @@ $(()=>{ //Start jQuery
     };
 
 
-    // Methods for interacting with Battlefield and PlayerGroup classes
+
+    //Turn options below. To create another action, the following muct be done:
+    //1. In createTurnOptionQuery(), add a string to 'viabaleActionTypes'. DO NOT change the order of existsing elements, as that will break other actions!
+    //2. Add a menu option for the action, include the actionType numberPCs
+    //3. The fun one - add the effects of the button in displayTurnOptions. Add text to the planning button, make sure the correct targets are selected, and make a new combat button definition for that action type.
+    //4. Add a specific function in the adventurer class the execute when the button is pressed.
 
     //call this once on character generation to generate arrays for making buttons in combat. Organize this stuff WELL
     //May not need this, depending how things get implemented in displayTurnOptions()
     createTurnOptionQuery(targetSelectorIndex, actionSelectorindex) { //Rename this
       let viableTargetTypes = ["actionMenu","foes","adventurers","all","self","foesAoE","adventurersAoE","allAoE"];
-      let viabaleActionTypes = ["threatenAttack","disengageAttack"];
+      let viabaleActionTypes = ["threatenAttack","disengageAttack","fullWithdraw","earthquake"];
       let targetType = viableTargetTypes[targetSelectorIndex];
       let actionType = viabaleActionTypes[actionSelectorindex];
+
 
       this.displayTurnOptions(targetType, actionType);
     };
@@ -334,33 +382,26 @@ $(()=>{ //Start jQuery
 
     //Displays the buttons to allow the player to input a turn. This may get REALLY bloated (surprise, it did!).
     displayTurnOptions(targetType, actionType) {
+
       if(!this.aliveBool) { //If dead, simply pass the turn without making buttons.
         this.currentBattlefield.planningPhaseController();
         return;
       }
       $("#commandList").empty();
       let buttonOwner = this;
-      let pcID = this.battlefieldId.slice(-1); //Just get the number
+      let pcID = this.battlefieldId; //Just get the number
 
 
-      //Look at targetType ->
-      //  create list of possible targets (how to add allies+foes?)
-      //  for loop over each applicable array, adding on the characters via slice
-      //Iterate through those targets, generating a button for each
-
-      //create a 'back' button that calls 'createTurnOptionQuery' with the previous menu
-
-      //Generate full target array
       let targetArray = [];
 
       //move this into a new function?
-      let menuOptionText = ["Threaten a foe","Disengage from a foe"]
+      let menuOptionText = [["Threaten a foe",1], ["Disengage from a foe",1], ["Withdraw from all foes",4], ["Conjure an Earthquake(!)",1]];
       if(targetType === "actionMenu") { //Generate the list of actions that can be taken.
-        for(let i = 0; i < 2; i++) {
+        for(let i = 0; i < menuOptionText.length; i++) {
           let $planningButton = $("<button>").addClass("commandButton");
-          $planningButton.text(`${buttonOwner.name} - ${menuOptionText[i]}`);
+          $planningButton.text(`${buttonOwner.name} - ${menuOptionText[i][0]}`);
           $planningButton.on("click", function() {
-            buttonOwner.createTurnOptionQuery(1,i); //This will have to be changed!
+            buttonOwner.createTurnOptionQuery(menuOptionText[i][1],i);
             $(`#pc${pcID}Block`).css({"border-color":"#5e5542","background-color":"#e5c990"});
           });
 
@@ -375,6 +416,7 @@ $(()=>{ //Start jQuery
         }
       }
 
+      //Adds all foes individually to the target list
       if(targetType === "foes" || targetType === "all") {
         for(let i = 0; i < this.currentBattlefield.enemyList.length; i++) {
           if(this.currentBattlefield.enemyList[i].aliveBool){//Only make buttons pertaining to those still in combat - this allows others to ignore the dead
@@ -382,16 +424,22 @@ $(()=>{ //Start jQuery
           }
         }
       }
-      if(targetType === "adventurers" || targetType === "all") {
+      //Adds all PCs individually to the list
+      if(targetType === "adventurers" || targetType === "all" ) {
         for(let i = 0; i < this.currentBattlefield.enemyList.length; i++) {
           if(this.currentBattlefield.playerCharacterList[i].aliveBool){
             targetArray.push(this.currentBattlefield.playerCharacterList.slice(i,i+1)[0]);
           }
         }
       }
+      //Adds this character to this list
+      if(targetType === "self") {
+        targetArray.push(this);
+      }
+
 
       for(let i = 0; i < targetArray.length; i++) {
-        let targetID = targetArray[i].battlefieldId.slice(-1);
+        let targetID = targetArray[i].battlefieldId;
         //Make a planning button for each vaild target
         let $planningButton = $("<button>").addClass("commandButton");
         //The text of the planning button
@@ -399,7 +447,12 @@ $(()=>{ //Start jQuery
           $planningButton.text(`${this.name} - Threaten: ${targetArray[i].name}`);
         } else if (actionType === "disengageAttack"){
           $planningButton.text(`${this.name} - Disengage: ${targetArray[i].name}`);
+        } else if (actionType === "fullWithdraw"){
+          $planningButton.text(`${this.name} - Withdraw`);
+        } else if (actionType === "earthquake"){
+          $planningButton.text(`${this.name} - Conjure Earthquake: ${targetArray[i].name}`);
         }
+
         $planningButton.on("click", function() {
           //If this planning button is clicked, the following combat action button will be generated
           let $combatButton = $("<button>").addClass("combatButton");
@@ -420,29 +473,49 @@ $(()=>{ //Start jQuery
             $combatButton.text(`Next action: ${buttonOwner.name}`)
             $combatButton.attr("id",`combatButton${buttonOwner.battlefieldId}`);
             $combatButton.on("click", function() {
-              //This order is VERY important!
               $combatButton.remove();
               buttonOwner.actionDisengageAttack(targetArray[i]);
             });//End the combat button definition
 
+          } else if (actionType==="fullWithdraw") { //Back away from all foes. No attack.
+            addToCombatLog(`${buttonOwner.name} plans to withdraw from all foes!`);
+            $(`#initEntry${buttonOwner.battlefieldId}`).text(`Withdraw`);
+            $combatButton.text(`Next action: ${buttonOwner.name}`)
+            $combatButton.attr("id",`combatButton${buttonOwner.battlefieldId}`);
+            $combatButton.on("click", function() {
+              $combatButton.remove();
+              buttonOwner.actionWithdraw();
+            });//End the combat button definition
+
+          } else if (actionType==="earthquake") { //Back away from all foes. No attack.
+            addToCombatLog(`${buttonOwner.name} plans to conjure an earthquake near ${targetArray[i].name}!`);
+            $(`#initEntry${buttonOwner.battlefieldId}`).text(`Earthquake: ${targetArray[i].name}`);
+            $combatButton.text(`Next action: ${buttonOwner.name}`)
+            $combatButton.attr("id",`combatButton${buttonOwner.battlefieldId}`);
+            $combatButton.on("click", function() {
+              $combatButton.remove();
+              buttonOwner.conjureEarthquake(targetArray[i]);
+            });//End the combat button definition
+
           }
+
           $combatButton.css("display", "none");
           $("#actionList").append($combatButton);
 
-          $(`#enemy${targetID}Block`).css({"border-color":"#5e5542","background-color":"#e5c990"});
-          $(`#pc${pcID}Block`).css({"border-color":"#5e5542","background-color":"#e5c990"});
+          $(`#${targetID}Block`).css({"border-color":"#5e5542","background-color":"#e5c990"});
+          $(`#${pcID}Block`).css({"border-color":"#5e5542","background-color":"#e5c990"});
           //This character's turn is planned, move onto the next one
           buttonOwner.currentBattlefield.planningPhaseController();
         }); //End 'on click' for planningButton
 
         $planningButton.on("mouseenter", function() {
-          $(`#enemy${targetID}Block`).css({"border-color":"blue","background-color":"#ffe7b5"});
-          $(`#pc${pcID}Block`).css({"border-color":"blue","background-color":"#ffe7b5"});
+          $(`#${targetID}Block`).css({"border-color":"blue","background-color":"#ffe7b5"});
+          $(`#${pcID}Block`).css({"border-color":"blue","background-color":"#ffe7b5"});
         });
 
         $planningButton.on("mouseleave", function() {
-          $(`#enemy${targetID}Block`).css({"border-color":"#5e5542","background-color":"#e5c990"});
-          $(`#pc${pcID}Block`).css({"border-color":"#5e5542","background-color":"#e5c990"});
+          $(`#${targetID}Block`).css({"border-color":"#5e5542","background-color":"#e5c990"});
+          $(`#${pcID}Block`).css({"border-color":"#5e5542","background-color":"#e5c990"});
         });
         $("#commandList").append($planningButton)
       }
@@ -456,19 +529,11 @@ $(()=>{ //Start jQuery
         });
         $("#commandList").append($backButton);
       }
-
-
-
-      //I don't think I need this anymore, keeping it around for a bit longer to be safe
-      /*
-      if($("#commandList").children().length === 0) {
-        //console.log("No foes remain.");
-
-        return;
-      }
-      */
     };
 
+
+
+    //Method for changing the value of maxWounds. Also changes current vigor+wounds by the same amount.
     alterMaxWounds(valueIn) {
       this.maxWounds += valueIn;
       this.restoreWounds(valueIn);
@@ -499,11 +564,20 @@ $(()=>{ //Start jQuery
 class Enemy extends Creature {
 
   static returnPreBuiltCreature(creatureIndexIn) {
+    //Change to a floor-by-floor list? Fewer wonky equations needed.
     //possibly add something here to let players know what enemy stats are after encountering them a few times?
     //Names: ~19 character max. Maybe fewer?
+    //Name/weapon/Vigor/Attack/Armor/Threat/Per/Init
     let enemyDataArray = [
-      ["Defective Brass Sentinel", "a dulled spear", 12, 7, 3, 1, 0, 0,],
-      ["Shriveled Ghoul", "its claws", 8, 9, 1, 2, 0, 4]
+      ["Shriveled Ghoul", "its claws", 8, 9, 1, 2, 0, 4],
+      ["Rusted Sentinel", "a dulled spear", 13, 8, 4, 1, 0, 0,],
+      ["Warg", "its toothy maw", 16, 10, 2, 1, 8, 6],
+      ["Animated Skeleton", "a rusted blade", 18, 10, 3, 3, 0, 2],
+      ["Brass Sentinel", "a spear", 25, 11, 5, 1, 0, 0],
+      ["Pact-bound Abyssal", "a jagged claw", 22, 16, 3, 4, 6, 6],
+      ["Risen Adventurer", "a longsword", 28, 14, 4, 3, 12, 4],
+      ["Unholy Cleric", "a cursed mace", 24, 15, 5, 2, 5, 3],
+      ["Steel Sentinel", "a halberd", 36, 16, 8, 1, 0, 0],
     ];
     return enemyDataArray[creatureIndexIn];
   };
@@ -576,17 +650,24 @@ class Battlefield {
   startCombat() {
 
     //Decides on and generates a number of foes to fight. Update to pull information from the map side!
-    let numberOfFoes = Math.floor(Math.random()*4)+1;
+    //Trying to put together a decently balanced enemy generation method. MATH
+    //8-10; 12-16; 16-22; 20-28
+    let currentFloor = 0;
+    let enemyBudget = 8+4*(currentFloor)+Math.ceil(Math.random()*2*(1+currentFloor));
+    //cost = 3+2*arrayIndex -> 3,5,7,9,11..
+    //0+1; 2; 3+4;
+    let maxEnemyIndex = Math.floor(((4+3*currentFloor)/2)-1);
+    let numberOfFoes = Math.floor(Math.random()*3)+2;
     let enemyNameNumbers = {};
     for (let i = 0; i < numberOfFoes; i++) {
       let enemyTypeIndex = Math.floor(Math.random()*2);
       let newEnemy;
-      if(enemyNameNumbers.enemyTypeIndex === undefined) {
+      if(enemyNameNumbers[`${enemyTypeIndex}`] === undefined) {
         newEnemy = new Enemy(enemyTypeIndex, "");
-        enemyNameNumbers.enemyTypeIndex = 1;
+        enemyNameNumbers[`${enemyTypeIndex}`] = 1;
       } else {
-        enemyNameNumbers.enemyTypeIndex++;
-        newEnemy = new Enemy(enemyTypeIndex, enemyNameNumbers.enemyTypeIndex);
+        enemyNameNumbers[`${enemyTypeIndex}`]++;
+        newEnemy = new Enemy(enemyTypeIndex, enemyNameNumbers[`${enemyTypeIndex}`]);
       }
       //let newEnemy = new Enemy(enemyTypeIndex,`${i+1}`);
       this.enemyList.push(newEnemy);
@@ -800,36 +881,35 @@ class Battlefield {
 
   //Decides what the enemies do. Probably random for the most part, for my sake. Creates a button that executes the enemy's action when clicked by the player. For now, only engages the PCs.
   enemyTurn(whosTurn) {
-      if(whosTurn.aliveBool) {
+    if(whosTurn.aliveBool) {
 
-        let validTargets = [];
-        for(let i =0; i < this.playerCharacterList.length; i++) {
-          if(this.playerCharacterList[i].aliveBool) {
-            validTargets.push(i);
-          }
+      let validTargets = [];
+      for(let i =0; i < this.playerCharacterList.length; i++) {
+        if(this.playerCharacterList[i].aliveBool) {
+          validTargets.push(i);
         }
-        let targetChoiceIndex = validTargets[Math.floor(Math.random()*validTargets.length)];
-        let selectedTarget = this.playerCharacterList[targetChoiceIndex]
-        let $combatButton = $("<button>").addClass("combatButton");
-        addToCombatLog(`${whosTurn.name} is planning to threaten ${selectedTarget.name} with ${whosTurn.weapon}`);
-        //Update the initiative order information
-        $(`#initEntry${whosTurn.battlefieldId}`).text(`Threaten: ${selectedTarget.name}`);
-        $combatButton.text(`Initiative ${whosTurn.initRoll}: ${whosTurn.name} - threaten ${selectedTarget.name}`);
-        $combatButton.attr("id",`combatButton${whosTurn.battlefieldId}`);
-        $combatButton.on("click", function() {
-          //This order is VERY important - don't delete the button until everything has been completed!
-
-          console.log(`Turn: ${whosTurn.name}`);
-          $combatButton.remove();
-          whosTurn.actionThreatenAttack(selectedTarget,1);
-
-          //whosTurn.currentBattlefield.combatPhaseController();
-
-        });
-        $combatButton.css("display", "none");
-        $("#actionList").append($combatButton);
-        //this.actionsRemaining++;
       }
+      let targetChoiceIndex = validTargets[Math.floor(Math.random()*validTargets.length)];
+      let selectedTarget = this.playerCharacterList[targetChoiceIndex]
+      let $combatButton = $("<button>").addClass("combatButton");
+      addToCombatLog(`${whosTurn.name} is planning to threaten ${selectedTarget.name} with ${whosTurn.weapon}`);
+      //Update the initiative order information
+      $(`#initEntry${whosTurn.battlefieldId}`).text(`Threaten: ${selectedTarget.name}`);
+      $combatButton.text(`Initiative ${whosTurn.initRoll}: ${whosTurn.name} - threaten ${selectedTarget.name}`);
+      $combatButton.attr("id",`combatButton${whosTurn.battlefieldId}`);
+      $combatButton.on("click", function() {
+        //This order is VERY important - don't delete the button until everything has been completed!
+
+        $combatButton.remove();
+        whosTurn.actionThreatenAttack(selectedTarget,1);
+
+        //whosTurn.currentBattlefield.combatPhaseController();
+
+      });
+      $combatButton.css("display", "none");
+      $("#actionList").append($combatButton);
+      //this.actionsRemaining++;
+    }
 
     //enemy turn planned - back to the planning phase controller
     this.planningPhaseController();
@@ -839,11 +919,8 @@ class Battlefield {
   //Determines the order in which the actions buttons are accessed.
   //Need to update the initiative log, as well
   combatPhaseController() {
-    console.log("Make next button visible!");
-    console.log(this.initiativeList);
     if(this.initiativeList.length > 0) {
       let buttonId = this.initiativeList.shift()[2];
-      console.log(buttonId);
       $(`#${buttonId}`).css("display","block");
     }
 
@@ -854,8 +931,6 @@ class Battlefield {
   //Checks if all combatants have completed an action
   checkToEndTurn() {
 
-    console.log("remianing actions:");
-    console.log($("#actionList").children().length);
     if($("#actionList").children().length <= 0) {
       //this.actionsRemaining = 0;
       this.resolveCombat();
@@ -1058,15 +1133,14 @@ class PlayerGroup {
 //The class used to get USGS data and do something with it.
 class ForceOfNature {
   constructor() {
-    //change to USGS
-    //this.queryString = `https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&starttime=2014-01-01&endtime=2014-01-02`;
   }
 
-  getExternalData() {
+  getExternalData(callbackFn) {
+    let quakeData;
 
     //Get today's date
     let todaysDate = new Date;
-    //Get quake data from just today
+    //Get ramdom quake magnitude data from just today
     this.queryString = `https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&starttime=${todaysDate.getFullYear()}-${todaysDate.getMonth()+1}-${todaysDate.getDate()}`;
 
     //API magic
@@ -1077,20 +1151,26 @@ class ForceOfNature {
     promise.then(
       (data)=>{
         //Grab a random magnitude value from the API
-        let quakeData = data.features[Math.floor(Math.random()*data.features.length)].properties.mag;
+        quakeData = data.features[Math.floor(Math.random()*data.features.length)].properties.mag;
 
         //send the data somewhere
-        addToCombatLog(`Found some earthquake data: ${quakeData}`);
-        addToCombatLog("I will use it eventually, I promise!");
+        addToCombatLog(`The USGS measured that quake at: ${quakeData}`);
+        if(callbackFn !== undefined) {
+          callbackFn(quakeData);
+        }
       },
       ()=>{
+        addToCombatLog("The spell fizzled - almost nothing happened!")
         console.log('bad request');
+        if(callbackFn !== undefined) {
+          callbackFn(0);
+        }
       }
     );
   };
 
 
-}
+} // End ForceOfNature class
 
 
 
@@ -1140,6 +1220,9 @@ let garzmok = new Adventurer("Garzmok", "a greatsword", 25, 10, 1, 2, 3, 7);
 let runa = new Adventurer("Runa", "unarmed strikes", 18, 7, 3, 3, 8, 3);
 //let talathel = new Adventurer("Talathel", "a rapier", 20, 8, 2, 1,2);
 
+garzmok.connectToAPI(quake);
+runa.connectToAPI(quake);
+
 let partyOne = new PlayerGroup();
 partyOne.addPC(garzmok);
 partyOne.addPC(runa);
@@ -1150,7 +1233,7 @@ mbComms.commLinkToPlayerGroup(partyOne);
 let fightOne = new Battlefield(partyOne);
 mbComms.commLinkToBattlefield(fightOne);
 
-quake.getExternalData();
+//quake.getExternalData();
 
 $("#increaseHealth").on("click", function() {partyOne.increaseHealth(); });
 
