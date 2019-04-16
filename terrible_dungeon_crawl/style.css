@@ -43,7 +43,7 @@ sectionCombat {
 #commandZone{
   background-color: #404959;
   width: 200px;
-  border-right: 3px solid #5e5542;
+  /* border-right: 3px solid #5e5542; */
   position: relative;
 }
 
@@ -88,7 +88,6 @@ ul {
 }
 
 .alignListBottom {
-  position:absolute;
   position: absolute;
   bottom: 0;
 }
@@ -127,6 +126,21 @@ li {
   background: rgba(100, 100, 100, .6);
 }
 
+.initOrderEntry {
+  background-color: #e5c990;
+  border: 2px solid #5e5542;
+  border-radius: 2px;
+  height: 40px;
+  width: 200px;
+  font-size: 12px;
+  box-sizing: border-box;
+  margin: 0;
+}
+
+.marginOnePx {
+  margin: 1px;
+  width: 100%;
+}
 div {
 
 }
@@ -136,7 +150,7 @@ div {
 }
 
 .centerTextbox{
-  background-color: #afb4bc;
+  background-color: white;
 	height: 350px;
 	width: 550px;
 	border-radius: 3px;
@@ -184,7 +198,7 @@ div {
   width: 100%;
   height: 200px;
   background-color: #e5c990;
-  border: 3px solid #5e5542;
+  border: 2px solid #5e5542;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -194,7 +208,7 @@ div {
   width: 100%;
   height: 150px;
   background-color: #e5c990;
-  border: 3px solid #5e5542;
+  border: 2px solid #5e5542;
   box-sizing: border-box;
 
 }

@@ -722,7 +722,11 @@ class Battlefield {
       this.initiativeList.sort(function(a,b){return (b[1] - (a[1]+(Math.random()*0.2-0.1)))});
       for(let i = 0; i < this.initiativeList.length; i++) {
         let currentCreature = this.initiativeList[i][0];
-        $("#initativeOrderList").append($("<h5>").text(`${currentCreature.name} - Initiative: ${this.initiativeList[i][1]}`));
+        let initOrderEntry = $("<div>").addClass("initOrderEntry");
+        initOrderEntry.append($("<h5>").addClass("marginOnePx").text(`${currentCreature.name}`));
+        initOrderEntry.append($("<h5>").addClass("marginOnePx").text(`Initiative: ${this.initiativeList[i][1]}`));
+        initOrderEntry.append($("<h5>").addClass("marginOnePx").text(`Placeholder Action`));
+        $("#initativeOrderList").append(initOrderEntry);
       }
 
       this.combatState = 2;
@@ -787,6 +791,7 @@ class Battlefield {
     this.planningPhaseController();
   };
 
+
   //Determines the order in which the actions buttons are accessed.
   combatPhaseController() {
     console.log("Make next button visible!");
@@ -796,24 +801,14 @@ class Battlefield {
       console.log(buttonId);
       $(`#${buttonId}`).css("display","block");
     }
-    //generate correct button Id, make it visible.
-    //$("#actionList").children().eq(0).css("display", "block");
-    //The combatButtons need Ids for this function to access.
-    // "combatButtonenemy${i}" or "combatButtonpc${i}"
-    //Make the actionButtons accessible one at a time in the correct order
-    //Each combatButton should call this
-    //Once all actions are complete, call resolveCombat();
 
-    //Eventually, remove checkToEndturn()
     this.checkToEndTurn();
   }
 
 
-  //This will be obsolete once combatPhaseController() is working!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  //Checks if all combatants have completed an action
   checkToEndTurn() {
-    //console.log("checking end of turn");
-    //console.log($("#actionList").children().length);
-    //this.actionsRemaining--;
+
     console.log("remianing actions:");
     console.log($("#actionList").children().length);
     if($("#actionList").children().length <= 0) {
@@ -1085,12 +1080,12 @@ function combatLoop() {
 let quake = new ForceOfNature();
 nameIn = "Garzmok", weaponIn = "a sword", woundsIn = 40, damageIn = 12, armorIn = 2, threatThIn = 2
 let garzmok = new Adventurer("Garzmok", "a greatsword", 55, 14, 1, 2,3);
-let runa = new Adventurer("Runa", "unarmed strikes", 40, 10, 4, 3,5);
+let daj = new Adventurer("Daj", "a longsword", 40, 10, 4, 3,5);
 let talathel = new Adventurer("Talathel", "a rapier", 35, 18, 2, 1,2);
 
 let partyOne = new PlayerGroup();
 partyOne.addPC(garzmok);
-partyOne.addPC(runa);
+partyOne.addPC(daj);
 partyOne.addPC(talathel);
 partyOne.updateMapHealthBlocks();
 mbComms.commLinkToPlayerGroup(partyOne);
