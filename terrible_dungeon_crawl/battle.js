@@ -29,34 +29,37 @@ $(()=>{ //Start jQuery
   //The basis for most in-game creatures
   //Only uses vigor for health - no wounds
   class Creature {
-    constructor(nameIn = "RUNELORD", weaponDescriptor = "a glaive", perceptionIn = 1) {
+    constructor(nameIn = "RUNELORD", weaponDescriptor = "a glaive", maxWoundsIn = 20, damageIn = 14, armorIn =2, threatThresholdIn = 3, perceptionIn = 1, initiativeIn = 3) {
+      //Used to identify the creature in logs and messages
       this.name = nameIn;
       this.weapon = weaponDescriptor;
+      //Used to keep track of max vigor - wounds themselves are only used by adventurers
+      this.maxWounds = maxWoundsIn;
+      //'outer' health bar. Easily recovered, lost before others.
+      this.vigor = this.maxWounds;
+      //Default damage per attack. Reduced by threat.
+      this.damage = damageIn;
+      //Default damage reduction. Reduced by threat past threatThreshold.
+      this.armor = armorIn;
+      //Limit to the amount of threat the creature can hold off before suffering greater penalites
+      this.threatThreshold = threatThresholdIn;
+      //Used in determining the planning turn order. Higher is better, as you see what others do before you select a choice.
+      this.perception = perceptionIn;
+      //Used in determining the action turn order. Higher is better, as you act sooner.
+      this.initiative = initiativeIn;
+
+      //A modified version of initiative used at the start of each round
+      this.rolledInit;
+       //Allows references to battlefield
+      this.currentBattlefield;
+       //Used to refer to and generate html element IDs
+      this.battlefieldId;
       //Array of enemies this creature is threatening
       this.threatenedFoes = [];
-      //Limit to the amount of threat the creature can hold off before suffering greater penalites
-      this.threatThreshold = 3;
       //How much threat the creature is currently holding off
       this.totalThreat = 0;
-      this.overwhelmedState = 0; //0 -> no, 1 -> at limit, 2 -> Yes
-
-      //'outer' health bar. Easily recovered, lost before others.
-      this.vigor = 35;
-      this.maxWounds = 35; //used to keep track of max vigor
-
-      //Default damage per attack. Reduced by threat.
-      this.damage = 14;
-      //Default damage reduction. Reduced by threat past threatThreshold.
-      this.armor = 2;
-
-      //Used in determineing turn order.
-      this.perception = perceptionIn;
-      this.initiative = 3;
-      this.rolledInit;
-
-      this.currentBattlefield; //Allows references to battlefield
-      this.battlefieldId; //Used to refer to html element ids
-
+      //An integer used to determine what threat penalties apply. 0 -> no, 1 -> at limit, 2 -> Yes
+      this.overwhelmedState = 0;
       //Is this alive? Updated upon death.
       this.aliveBool = true;
     };
@@ -134,7 +137,7 @@ $(()=>{ //Start jQuery
 
       let enemyExists = false;
       if(!targetCreature.aliveBool) { //If the target is dead, no threat is generated.
-        addToCombatLog(`${targetCreature.name} is slain - ${this.name} did not bother  threatening it.`);
+        addToCombatLog(`${targetCreature.name} is dead - ${this.name} did not bother  threatening it.`);
         return;
       }
       //If this creature is trying to generate more threat, it won't be able to if it is at or above its threatThreshold
@@ -261,21 +264,22 @@ $(()=>{ //Start jQuery
 
   //The adventurers! These are the player characters (PCs). Creatures with added button functionality, wounds, and other abilties/complexity
   class Adventurer extends Creature {
-    constructor(nameIn = "Garzmok", weaponIn = "a sword", woundsIn = 40, damageIn = 12, armorIn = 2, threatThIn = 2, perceptionIn = 5) {
+    constructor(nameIn = "Garzmok", weaponIn = "a sword", maxWoundsIn = 40, damageIn = 12, armorIn = 2, threatThresholdIn = 2, perceptionIn = 5, initiativeIn = 5) {
       super();
       this.name = nameIn;
       this.weapon = weaponIn;
       //A secondary health bar; adventurers do not perish until their wounds hit zero (note- the players see the opposite: as wounds as taken, this value decreases! Makes more sense from their perspective.)
-      this.maxWounds = woundsIn;
+      this.maxWounds = maxWoundsIn;
       this.wounds = this.maxWounds;
 
       //these are the same as in the creature class
       this.vigor = this.maxWounds;
       this.damage = damageIn;
       this.armor = armorIn;
-      this.threatThreshold = threatThIn;
+      this.threatThreshold = threatThresholdIn;
       this.aliveBool = true;
       this.perception = perceptionIn;
+      this.Initiative = initiativeIn;
     };
 
     //Damage is applied to vigor before wounds, but if enough vigor is lost in a single hit, some vigor damage is converted into wound 'chip damage'.
@@ -401,7 +405,7 @@ $(()=>{ //Start jQuery
           let $combatButton = $("<button>").addClass("combatButton");
           if(actionType === "threatenAttack") { //Threaten, then attack
             addToCombatLog(`${buttonOwner.name} is planning to threaten ${targetArray[i].name} with ${buttonOwner.weapon}`);
-
+            $(`#initEntry${buttonOwner.battlefieldId}`).text(`Threaten: ${targetArray[i].name}`);
             $combatButton.text(`Next action: ${buttonOwner.name}`)
             $combatButton.attr("id",`combatButton${buttonOwner.battlefieldId}`);
             $combatButton.on("click", function() {
@@ -412,7 +416,7 @@ $(()=>{ //Start jQuery
 
           } else if (actionType === "disengageAttack"){ //Disengage, then attack
             addToCombatLog(`${buttonOwner.name} plans to disengage from ${targetArray[i].name}`);
-
+            $(`#initEntry${buttonOwner.battlefieldId}`).text(`Disengage: ${targetArray[i].name}`);
             $combatButton.text(`Next action: ${buttonOwner.name}`)
             $combatButton.attr("id",`combatButton${buttonOwner.battlefieldId}`);
             $combatButton.on("click", function() {
@@ -493,14 +497,22 @@ $(()=>{ //Start jQuery
 
 //I should convert most foes to this. Maybe.
 class Enemy extends Creature {
-  constructor() {
-    super();
-    this.vigor = 20;
 
-    this.damage = 5;
-    this.armor = 1;
+  static returnPreBuiltCreature(creatureIndexIn) {
+    //possibly add something here to let players know what enemy stats are after encountering them a few times?
+    //Names: ~19 character max. Maybe fewer?
+    let enemyDataArray = [
+      ["Defective Brass Sentinel", "a dulled spear", 12, 7, 3, 1, 0, 0,],
+      ["Shriveled Ghoul", "its claws", 8, 9, 1, 2, 0, 4]
+    ];
+    return enemyDataArray[creatureIndexIn];
+  };
 
-    this.threatenedFoes = [];
+  constructor(creatureIndexIn, nameAddition = "") {
+
+    let enemyData = Enemy.returnPreBuiltCreature(creatureIndexIn);
+
+    super(`${enemyData[0]} ${nameAddition}`, enemyData[1], enemyData[2], enemyData[3], enemyData[4], enemyData[5], enemyData[6], enemyData[7]);
   };
 
 
@@ -565,8 +577,18 @@ class Battlefield {
 
     //Decides on and generates a number of foes to fight. Update to pull information from the map side!
     let numberOfFoes = Math.floor(Math.random()*4)+1;
+    let enemyNameNumbers = {};
     for (let i = 0; i < numberOfFoes; i++) {
-      let newEnemy = new Creature(`RUNELORD${i+1}`, " a glaive", i+1);
+      let enemyTypeIndex = Math.floor(Math.random()*2);
+      let newEnemy;
+      if(enemyNameNumbers.enemyTypeIndex === undefined) {
+        newEnemy = new Enemy(enemyTypeIndex, "");
+        enemyNameNumbers.enemyTypeIndex = 1;
+      } else {
+        enemyNameNumbers.enemyTypeIndex++;
+        newEnemy = new Enemy(enemyTypeIndex, enemyNameNumbers.enemyTypeIndex);
+      }
+      //let newEnemy = new Enemy(enemyTypeIndex,`${i+1}`);
       this.enemyList.push(newEnemy);
     }
     //Makes the battlefield aware of the foes, and them aware of it.
@@ -737,11 +759,16 @@ class Battlefield {
       this.initiativeList.sort(function(a,b){return (b[1] - (a[1]+(Math.random()*0.2-0.1)))});
       for(let i = 0; i < this.initiativeList.length; i++) {
         let currentCreature = this.initiativeList[i][0];
-        let initOrderEntry = $("<div>").addClass("initOrderEntry");
-        initOrderEntry.append($("<h5>").addClass("marginOnePx").text(`${currentCreature.name}`));
-        initOrderEntry.append($("<h5>").addClass("marginOnePx").text(`Initiative: ${this.initiativeList[i][1]}`));
-        initOrderEntry.append($("<h5>").addClass("marginOnePx").text(`Placeholder Action`));
-        $("#initativeOrderList").append(initOrderEntry);
+        let $initOrderEntry = $("<div>").addClass("initOrderEntry");
+        $initOrderEntry.append($("<h5>").addClass("marginOnePx").text(`${currentCreature.name}`));
+        //$initOrderEntry.append($("<h5>").addClass("marginOnePx").text(`Initiative: ${this.initiativeList[i][1]}`));
+        $initOrderEntry.append($("<h5>").addClass("marginOnePx").text(`???`).attr("id",`initEntry${currentCreature.battlefieldId}`));
+        if(currentCreature instanceof Enemy) {
+          $initOrderEntry.css("border-color","red");
+        } else {
+          $initOrderEntry.css("border-color","blue");
+        }
+        $("#initativeOrderList").append($initOrderEntry);
       }
 
       this.combatState = 2;
@@ -785,6 +812,8 @@ class Battlefield {
         let selectedTarget = this.playerCharacterList[targetChoiceIndex]
         let $combatButton = $("<button>").addClass("combatButton");
         addToCombatLog(`${whosTurn.name} is planning to threaten ${selectedTarget.name} with ${whosTurn.weapon}`);
+        //Update the initiative order information
+        $(`#initEntry${whosTurn.battlefieldId}`).text(`Threaten: ${selectedTarget.name}`);
         $combatButton.text(`Initiative ${whosTurn.initRoll}: ${whosTurn.name} - threaten ${selectedTarget.name}`);
         $combatButton.attr("id",`combatButton${whosTurn.battlefieldId}`);
         $combatButton.on("click", function() {
@@ -808,6 +837,7 @@ class Battlefield {
 
 
   //Determines the order in which the actions buttons are accessed.
+  //Need to update the initiative log, as well
   combatPhaseController() {
     console.log("Make next button visible!");
     console.log(this.initiativeList);
@@ -883,7 +913,7 @@ class Battlefield {
     let $leaveBattleButton = $("<button>").text("-Resume exploration-");
     $leaveBattleButton.addClass("commandButton");
     $leaveBattleButton.on("click", function() {
-
+      $("#initativeOrderList").empty();
       //hide combat overlay
       $("#combatOverlay").hide();
 
@@ -1102,19 +1132,18 @@ function hideLevelUp() {
 
 
 
-
 //Run 'Stuff'
 
 let quake = new ForceOfNature();
-nameIn = "Garzmok", weaponIn = "a sword", woundsIn = 40, damageIn = 12, armorIn = 2, threatThIn = 2
-let garzmok = new Adventurer("Garzmok", "a greatsword", 55, 14, 1, 2,3);
-//let daj = new Adventurer("Daj", "a longsword", 40, 10, 4, 3,5);
-let talathel = new Adventurer("Talathel", "a rapier", 35, 18, 2, 1,2);
+
+let garzmok = new Adventurer("Garzmok", "a greatsword", 25, 10, 1, 2, 3, 7);
+let runa = new Adventurer("Runa", "unarmed strikes", 18, 7, 3, 3, 8, 3);
+//let talathel = new Adventurer("Talathel", "a rapier", 20, 8, 2, 1,2);
 
 let partyOne = new PlayerGroup();
 partyOne.addPC(garzmok);
-//partyOne.addPC(daj);
-partyOne.addPC(talathel);
+partyOne.addPC(runa);
+//partyOne.addPC(talathel);
 partyOne.updateMapHealthBlocks();
 mbComms.commLinkToPlayerGroup(partyOne);
 

@@ -132,7 +132,7 @@ li {
   border-radius: 2px;
   height: 40px;
   width: 200px;
-  font-size: 12px;
+  font-size: 11px;
   box-sizing: border-box;
   margin: 0;
 }
@@ -195,7 +195,8 @@ div {
   position: absolute;
   bottom: -106px;
   left: -3px;
-  transform: translate(50%, 0%;)
+  transform: translate(50%, 0%;);
+  font-size: 11px;
 }
 
 .pcStatBlock {
