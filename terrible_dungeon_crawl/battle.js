@@ -283,9 +283,9 @@ $(()=>{ //Start jQuery
             let targetCreature = conjuringCreature.currentBattlefield.enemyList[i];
             if (targetCreature.aliveBool) {
               console.log(`Mag: ${returnedMagnitude}`);
-              console.log(`Mag: ${conjuringCreature.magic/3}`);
-              console.log(Math.floor(returnedMagnitude*(conjuringCreature.magic/3)));
-              targetCreature.takeDamage(Math.floor(returnedMagnitude*(conjuringCreature.magic/3)),1); //Ignore armor!
+              console.log(`Mag: ${conjuringCreature.magic/2.5}`);
+              console.log(Math.floor(returnedMagnitude*(conjuringCreature.magic/2.5)));
+              targetCreature.takeDamage(Math.floor(returnedMagnitude*(conjuringCreature.magic/2.5)),1); //Ignore armor!
             }
           }
           conjuringCreature.currentBattlefield.combatPhaseController();
@@ -314,326 +314,415 @@ $(()=>{ //Start jQuery
             let targetCreature = this.threatenedFoes[i][0];
             console.log(targetCreature.aliveBool);
             if (targetCreature.aliveBool) { //This isn't working
-              console.log(`${targetCreature.name} is alive! DAMAGE IT`);
-              targetCreature.takeDamage(this.calculateDamage(),0);
-            }
+            console.log(`${targetCreature.name} is alive! DAMAGE IT`);
+            targetCreature.takeDamage(this.calculateDamage(),0);
           }
         }
-      } else {
-        addToCombatLog(`${this.name} was slain before it could act.`)
       }
-      this.currentBattlefield.combatPhaseController();
-
-    };
-
-  } //End of Creature class
-
-  //The adventurers! These are the player characters (PCs). Creatures with added button functionality, wounds, and other abilties/complexity
-  class Adventurer extends Creature {
-    constructor(nameIn = "Garzmok", weaponIn = "a sword", maxWoundsIn = 40, damageIn = 12, magicIn = 5, armorIn = 2, threatThresholdIn = 2, perceptionIn = 5, initiativeIn = 5) {
-      super();
-      this.name = nameIn;
-      this.weapon = weaponIn;
-      //A secondary health bar; adventurers do not perish until their wounds hit zero (note- the players see the opposite: as wounds as taken, this value decreases! Makes more sense from their perspective.)
-      this.maxWounds = maxWoundsIn;
-      this.wounds = this.maxWounds;
-
-      //Used to improve the character over bouts of combat
-      this.currentLevel = 0;
-      this.currentExp = 0;
-      this.unusedSkillPoints = 0;
-
-      //these are the same as in the creature class
-      this.vigor = this.maxWounds;
-      this.damage = damageIn;
-      this.magic = magicIn;
-      this.armor = armorIn;
-      this.threatThreshold = threatThresholdIn;
-      this.aliveBool = true;
-      this.perception = perceptionIn;
-      this.Initiative = initiativeIn;
-
-      //used to get data from an API
-      this.attachedAPI;
-    };
-
-    connectToAPI(forceOfnatureIn) {
-      this.attachedAPI = forceOfnatureIn;
+    } else {
+      addToCombatLog(`${this.name} was slain before it could act.`)
     }
+    this.currentBattlefield.combatPhaseController();
 
-    //Damage is applied to vigor before wounds, but if enough vigor is lost in a single hit, some vigor damage is converted into wound 'chip damage'.
-    //This also generates a message to let the player how much damage of each type was applied.
-    takeDamage(incomingDamage, ignoreArmorBool = 0) {
-      let damageTaken;
-      if(ignoreArmorBool) {
-        damageTaken = incomingDamage;
-      } else {
-        damageTaken = Math.max(incomingDamage-this.calculateDR(),1); //Always take 1 damage
-      }
-      //This is the wound chip damage
-      let woundChipDamage = Math.floor(damageTaken/5);
-      damageTaken -= woundChipDamage; //Vigor damage is CONVERTED to wound chip damage
-      let vigorDamageTaken = Math.min(damageTaken, this.vigor); //no negative vigor allowed
-      //Make sure all the damage is properly accounted for.
-      let woundDamage = (damageTaken-vigorDamageTaken) + woundChipDamage;
-      this.vigor -= vigorDamageTaken;
-      this.wounds -= woundDamage;
-      let damageMessage = `${this.name} lost ${vigorDamageTaken} vigor`;
-      if(woundDamage > 1) {
-        damageMessage += ` and took ${woundDamage} wounds!`;
-      } else if (woundDamage === 1) {
-        damageMessage += ` and took ${woundDamage} wound!`;
-      } else {
-        damageMessage += "!";
-      }
-      addToCombatLog(damageMessage);
-      this.currentBattlefield.updateHealthValues();
-      //If dead, clear threat and let the player know
-      if( this.wounds <= 0) {
-        addToCombatLog(`${this.name} has perished.`);
-        $(`#${this.battlefieldId}Block`).css("backgroundColor", "#4f2b2b");
-        this.aliveBool = false;
-        this.clearAllThreat();
-      }
-    };
+  };
 
-    logHealth() {
-      console.log(`${this.vigor}/${this.wounds}/${this.maxWounds}`);
-    };
+} //End of Creature class
+
+//The adventurers! These are the player characters (PCs). Creatures with added button functionality, wounds, and other abilties/complexity
+class Adventurer extends Creature {
+
+  static returnAdventurerClass(classIndexIn) {
+
+    let classDataArray = [
+      {className: "Gladiator", maxWounds: 20, damage: 11, magic: 4, armor: 1, threatThreshold: 2, perception: 3, initiative: 7, woundScaling:4, damageScaling:3, magicScaling: 4, armorScaling: 3, threatThresholdScaling: 6, perceptionScaling: 3, initiativeScaling: 2},
+      {className: "Theurge", maxWounds: 15, damage: 7, magic: 8, armor: 2, threatThreshold: 3, perception: 5, initiative: 3, woundScaling:3, damageScaling:4, magicScaling: 2, armorScaling: 2, threatThresholdScaling: 5, perceptionScaling: 2, initiativeScaling: 3},
+      {className: "Duelist", maxWounds: 15, damage: 14, magic: 6, armor: 2, threatThreshold: 1, perception: 8, initiative: 9, woundScaling:3, damageScaling:2, magicScaling: 3, armorScaling: 2, threatThresholdScaling: 7, perceptionScaling: 2, initiativeScaling: 2},
+    ];
+    return classDataArray[classIndexIn];
+  };
+
+  constructor(nameIn = "Garzmok", weaponIn = "a sword", classId = 0) {
+    super();
+
+    let classData = Adventurer.returnAdventurerClass(classId);
+
+    this.name = nameIn;
+    this.weapon = weaponIn;
+    this.className = classData.className;
+    //A secondary health bar; adventurers do not perish until their wounds hit zero (note- the players see the opposite: as wounds as taken, this value decreases! Makes more sense from their perspective.)
+    this.maxWounds = classData.maxWounds;
+    this.wounds = classData.maxWounds;
+
+    //these are the same as in the creature class
+    this.vigor = classData.maxWounds;
+    this.damage = classData.damage;
+    this.magic = classData.magic;
+    this.armor = classData.armor;
+    this.threatThreshold = classData.threatThreshold;
+    this.perception = classData.perception;
+    this.Initiative = classData.initiative;
+
+    this.aliveBool = true;
+
+    //Used to improve the character over bouts of combat
+    this.currentLevel = 0;
+    this.currentExp = 0;
+    this.nextLevelExp = 5;
+    this.unusedSkillPoints = 0;
+
+    //these are all used when leveling up.
+    this.woundScaling = classData.woundScaling; //max wounds go up by this much each level
+    this.damageScaling = classData.damageScaling; //All others iuncrease by 1 up every 'thingScaling' levels
+    this.magicScaling = classData.magicScaling;
+    this.armorScaling = classData.armorScaling;
+    this.threatThresholdScaling = classData.threatThresholdScaling;
+    this.perceptionScaling = classData.perceptionScaling;
+    this.initiativeScaling = classData.initiativeScaling;
+
+    //Used to 'talk' to the rest of the party
+    this.attachedPlayerGroup;
+    //used to get data from an API
+    this.attachedAPI;
+
+    console.log(`${this.name} is a ${this.className}`);
+  };
+
+  connectToAPI(forceOfnatureIn) {
+    this.attachedAPI = forceOfnatureIn;
+  }
+
+  //Damage is applied to vigor before wounds, but if enough vigor is lost in a single hit, some vigor damage is converted into wound 'chip damage'.
+  //This also generates a message to let the player how much damage of each type was applied.
+  takeDamage(incomingDamage, ignoreArmorBool = 0) {
+    let damageTaken;
+    if(ignoreArmorBool) {
+      damageTaken = incomingDamage;
+    } else {
+      damageTaken = Math.max(incomingDamage-this.calculateDR(),1); //Always take 1 damage
+    }
+    //This is the wound chip damage
+    let woundChipDamage = Math.floor(damageTaken/3.5);
+    damageTaken -= woundChipDamage; //Vigor damage is CONVERTED to wound chip damage
+    let vigorDamageTaken = Math.min(damageTaken, this.vigor); //no negative vigor allowed
+    //Make sure all the damage is properly accounted for.
+    let woundDamage = (damageTaken-vigorDamageTaken) + woundChipDamage;
+    this.vigor -= vigorDamageTaken;
+    this.wounds -= woundDamage;
+    let damageMessage = `${this.name} lost ${vigorDamageTaken} vigor`;
+    if(woundDamage > 1) {
+      damageMessage += ` and took ${woundDamage} wounds!`;
+    } else if (woundDamage === 1) {
+      damageMessage += ` and took ${woundDamage} wound!`;
+    } else {
+      damageMessage += "!";
+    }
+    addToCombatLog(damageMessage);
+    this.currentBattlefield.updateHealthValues();
+    //If dead, clear threat and let the player know
+    if( this.wounds <= 0) {
+      addToCombatLog(`${this.name} has perished.`);
+      $(`#${this.battlefieldId}Block`).css("backgroundColor", "#4f2b2b");
+      this.aliveBool = false;
+      this.clearAllThreat();
+    }
+  };
+
+
+  logHealth() {
+    console.log(`${this.vigor}/${this.wounds}/${this.maxWounds}`);
+  };
 
 
 
-    //Turn options below. To create another action, the following muct be done:
-    //1. In createTurnOptionQuery(), add a string to 'viabaleActionTypes'. DO NOT change the order of existsing elements, as that will break other actions!
-    //2. Add a menu option for the action, include the actionType numberPCs
-    //3. The fun one - add the effects of the button in displayTurnOptions. Add text to the planning button, make sure the correct targets are selected, and make a new combat button definition for that action type.
-    //4. Add a specific function in the adventurer class the execute when the button is pressed.
+  //Turn options below. To create another action, the following muct be done:
+  //1. In createTurnOptionQuery(), add a string to 'viabaleActionTypes'. DO NOT change the order of existsing elements, as that will break other actions!
+  //2. Add a menu option for the action, include the actionType numberPCs
+  //3. The fun one - add the effects of the button in displayTurnOptions. Add text to the planning button, make sure the correct targets are selected, and make a new combat button definition for that action type.
+  //4. Add a specific function in the adventurer class the execute when the button is pressed.
 
-    //call this once on character generation to generate arrays for making buttons in combat. Organize this stuff WELL
-    //May not need this, depending how things get implemented in displayTurnOptions()
-    createTurnOptionQuery(targetSelectorIndex, actionSelectorindex) { //Rename this
-      let viableTargetTypes = ["actionMenu","foes","adventurers","all","self","foesAoE","adventurersAoE","allAoE"];
-      let viabaleActionTypes = ["threatenAttack","disengageAttack","fullWithdraw","earthquake"];
-      let targetType = viableTargetTypes[targetSelectorIndex];
-      let actionType = viabaleActionTypes[actionSelectorindex];
-
-
-      this.displayTurnOptions(targetType, actionType);
-    };
+  //call this once on character generation to generate arrays for making buttons in combat. Organize this stuff WELL
+  //May not need this, depending how things get implemented in displayTurnOptions()
+  createTurnOptionQuery(targetSelectorIndex, actionSelectorindex) { //Rename this
+    let viableTargetTypes = ["actionMenu","foes","adventurers","all","self","foesAoE","adventurersAoE","allAoE"];
+    let viabaleActionTypes = ["threatenAttack","disengageAttack","fullWithdraw","earthquake"];
+    let targetType = viableTargetTypes[targetSelectorIndex];
+    let actionType = viabaleActionTypes[actionSelectorindex];
 
 
-    //Displays the buttons to allow the player to input a turn. This may get REALLY bloated (surprise, it did!).
-    displayTurnOptions(targetType, actionType) {
-
-      if(!this.aliveBool) { //If dead, simply pass the turn without making buttons.
-        this.currentBattlefield.planningPhaseController();
-        return;
-      }
-      $("#commandList").empty();
-      let buttonOwner = this;
-      let pcID = this.battlefieldId; //Just get the number
+    this.displayTurnOptions(targetType, actionType);
+  };
 
 
-      let targetArray = [];
+  //Displays the buttons to allow the player to input a turn. This may get REALLY bloated (surprise, it did!).
+  displayTurnOptions(targetType, actionType) {
 
-      //move this into a new function?
-      let menuOptionText = [["Threaten a foe",1], ["Disengage from a foe",1], ["Withdraw from all foes",4], ["Conjure an Earthquake(!)",5]];
-      if(targetType === "actionMenu") { //Generate the list of actions that can be taken.
-        for(let i = 0; i < menuOptionText.length; i++) {
-          let $planningButton = $("<button>").addClass("commandButton");
-          $planningButton.text(`${buttonOwner.name} - ${menuOptionText[i][0]}`);
-          $planningButton.on("click", function() {
-            buttonOwner.createTurnOptionQuery(menuOptionText[i][1],i);
-            $(`#pc${pcID}Block`).css({"border-color":"#5e5542","background-color":"#e5c990"});
-          });
+    if(!this.aliveBool) { //If dead, simply pass the turn without making buttons.
+      this.currentBattlefield.planningPhaseController();
+      return;
+    }
+    $("#commandList").empty();
+    let buttonOwner = this;
+    let pcID = this.battlefieldId; //Just get the number
 
-          $planningButton.on("mouseenter", function() {
-            $(`#pc${pcID}Block`).css({"border-color":"blue","background-color":"#ffe7b5"});
-          });
 
-          $planningButton.on("mouseleave", function() {
-            $(`#pc${pcID}Block`).css({"border-color":"#5e5542","background-color":"#e5c990"});
-          });
-          $("#commandList").append($planningButton);
-        }
-      }
+    let targetArray = [];
 
-      //Adds all foes individually to the target list
-      if(targetType === "foes" || targetType === "all") {
-        for(let i = 0; i < this.currentBattlefield.enemyList.length; i++) {
-          if(this.currentBattlefield.enemyList[i].aliveBool){//Only make buttons pertaining to those still in combat - this allows others to ignore the dead
-            targetArray.push(this.currentBattlefield.enemyList.slice(i,i+1)[0]);
-          }
-        }
-      }
-      //Adds all PCs individually to the list
-      if(targetType === "adventurers" || targetType === "all" ) {
-        for(let i = 0; i < this.currentBattlefield.enemyList.length; i++) {
-          if(this.currentBattlefield.playerCharacterList[i].aliveBool){
-            targetArray.push(this.currentBattlefield.playerCharacterList.slice(i,i+1)[0]);
-          }
-        }
-      }
-      //Adds this character to this list
-      if(targetType === "self" || targetType === "foesAoE") {
-        targetArray.push(this);
-      }
-      //create list of additional ids of statblocks for highlighting during AoEs
-      let highlightIdList = [];
-      if(targetType === "foesAoE") {
-        for(let i = 0; i < this.currentBattlefield.enemyList.length; i++) {
-          if(this.currentBattlefield.enemyList[i].aliveBool) {
-            highlightIdList.push(this.currentBattlefield.enemyList.slice(i,i+1)[0].battlefieldId);
-          }
-        }
-      }
-
-      for(let i = 0; i < targetArray.length; i++) {
-        let targetID = targetArray[i].battlefieldId;
-        //Make a planning button for each vaild target
+    //move this into a new function?
+    let menuOptionText = [["Threaten a foe",1], ["Disengage from a foe",1], ["Withdraw from all foes",4], ["Conjure an Earthquake(!)",5]];
+    if(targetType === "actionMenu") { //Generate the list of actions that can be taken.
+      for(let i = 0; i < menuOptionText.length; i++) {
         let $planningButton = $("<button>").addClass("commandButton");
-        //The text of the planning button
-        if(actionType === "threatenAttack") {
-          $planningButton.text(`${this.name} - Threaten: ${targetArray[i].name}`);
-        } else if (actionType === "disengageAttack"){
-          $planningButton.text(`${this.name} - Disengage: ${targetArray[i].name}`);
-        } else if (actionType === "fullWithdraw"){
-          $planningButton.text(`${this.name} - Withdraw`);
-        } else if (actionType === "earthquake"){
-          $planningButton.text(`${this.name} - Conjure Earthquake: All foes`);
-        }
-
+        $planningButton.text(`${buttonOwner.name} - ${menuOptionText[i][0]}`);
         $planningButton.on("click", function() {
-          //If this planning button is clicked, the following combat action button will be generated
-          let $combatButton = $("<button>").addClass("combatButton");
-          if(actionType === "threatenAttack") { //Threaten, then attack
-            addToCombatLog(`${buttonOwner.name} is planning to threaten ${targetArray[i].name} with ${buttonOwner.weapon}`);
-            $(`#initEntry${buttonOwner.battlefieldId}`).text(`Threaten: ${targetArray[i].name}`);
-            $combatButton.text(`Next action: ${buttonOwner.name}`)
-            $combatButton.attr("id",`combatButton${buttonOwner.battlefieldId}`);
-            $combatButton.on("click", function() {
-              //This order is VERY important! The next button needs to be shown.
-              $combatButton.remove();
-              buttonOwner.actionThreatenAttack(targetArray[i],1);
-            });//End the combat button definition
-
-          } else if (actionType === "disengageAttack"){ //Disengage, then attack
-            addToCombatLog(`${buttonOwner.name} plans to disengage from ${targetArray[i].name}`);
-            $(`#initEntry${buttonOwner.battlefieldId}`).text(`Disengage: ${targetArray[i].name}`);
-            $combatButton.text(`Next action: ${buttonOwner.name}`)
-            $combatButton.attr("id",`combatButton${buttonOwner.battlefieldId}`);
-            $combatButton.on("click", function() {
-              $combatButton.remove();
-              buttonOwner.actionDisengageAttack(targetArray[i]);
-            });//End the combat button definition
-
-          } else if (actionType==="fullWithdraw") { //Back away from all foes. No attack.
-            addToCombatLog(`${buttonOwner.name} plans to withdraw from all foes!`);
-            $(`#initEntry${buttonOwner.battlefieldId}`).text(`Withdraw`);
-            $combatButton.text(`Next action: ${buttonOwner.name}`)
-            $combatButton.attr("id",`combatButton${buttonOwner.battlefieldId}`);
-            $combatButton.on("click", function() {
-              $combatButton.remove();
-              buttonOwner.actionWithdraw();
-            });//End the combat button definition
-
-          } else if (actionType==="earthquake") { //Back away from all foes. No attack.
-            addToCombatLog(`${buttonOwner.name} plans to conjure an earthquake!`);
-            $(`#initEntry${buttonOwner.battlefieldId}`).text(`Earthquake: All foes`);
-            $combatButton.text(`Next action: ${buttonOwner.name}`)
-            $combatButton.attr("id",`combatButton${buttonOwner.battlefieldId}`);
-            $combatButton.on("click", function() {
-              $combatButton.remove();
-              buttonOwner.conjureEarthquake();
-            });//End the combat button definition
-
-          }
-
-          $combatButton.css("display", "none");
-          $("#actionList").append($combatButton);
-
-          $(`#${targetID}Block`).css({"border-color":"#5e5542","background-color":"#e5c990"});
-          $(`#${pcID}Block`).css({"border-color":"#5e5542","background-color":"#e5c990"});
-
-          for (let j = 0; j < highlightIdList.length; j ++) {
-            $(`#${highlightIdList[j]}Block`).css({"border-color":"#5e5542","background-color":"#e5c990"});
-          }
-
-          //This character's turn is planned, move onto the next one
-          buttonOwner.currentBattlefield.planningPhaseController();
-        }); //End 'on click' for planningButton
+          buttonOwner.createTurnOptionQuery(menuOptionText[i][1],i);
+          $(`#pc${pcID}Block`).css({"border-color":"#5e5542","background-color":"#e5c990"});
+        });
 
         $planningButton.on("mouseenter", function() {
-          $(`#${targetID}Block`).css({"border-color":"blue","background-color":"#ffe7b5"});
-          $(`#${pcID}Block`).css({"border-color":"blue","background-color":"#ffe7b5"});
+          $(`#pc${pcID}Block`).css({"border-color":"blue","background-color":"#ffe7b5"});
         });
 
         $planningButton.on("mouseleave", function() {
-          $(`#${targetID}Block`).css({"border-color":"#5e5542","background-color":"#e5c990"});
-          $(`#${pcID}Block`).css({"border-color":"#5e5542","background-color":"#e5c990"});
+          $(`#pc${pcID}Block`).css({"border-color":"#5e5542","background-color":"#e5c990"});
         });
+        $("#commandList").append($planningButton);
+      }
+    }
 
+    //Adds all foes individually to the target list
+    if(targetType === "foes" || targetType === "all") {
+      for(let i = 0; i < this.currentBattlefield.enemyList.length; i++) {
+        if(this.currentBattlefield.enemyList[i].aliveBool){//Only make buttons pertaining to those still in combat - this allows others to ignore the dead
+          targetArray.push(this.currentBattlefield.enemyList.slice(i,i+1)[0]);
+        }
+      }
+    }
+    //Adds all PCs individually to the list
+    if(targetType === "adventurers" || targetType === "all" ) {
+      for(let i = 0; i < this.currentBattlefield.enemyList.length; i++) {
+        if(this.currentBattlefield.playerCharacterList[i].aliveBool){
+          targetArray.push(this.currentBattlefield.playerCharacterList.slice(i,i+1)[0]);
+        }
+      }
+    }
+    //Adds this character to this list
+    if(targetType === "self" || targetType === "foesAoE") {
+      targetArray.push(this);
+    }
+    //create list of additional ids of statblocks for highlighting during AoEs
+    let highlightIdList = [];
+    if(targetType === "foesAoE") {
+      for(let i = 0; i < this.currentBattlefield.enemyList.length; i++) {
+        if(this.currentBattlefield.enemyList[i].aliveBool) {
+          highlightIdList.push(this.currentBattlefield.enemyList.slice(i,i+1)[0].battlefieldId);
+        }
+      }
+    }
 
-        for (let j = 0; j < highlightIdList.length; j ++) {
-          $planningButton.on("mouseenter", function() {
-            $(`#${highlightIdList[j]}Block`).css({"border-color":"blue","background-color":"#ffe7b5"});
-          });
-          $planningButton.on("mouseleave", function() {
-            $(`#${highlightIdList[j]}Block`).css({"border-color":"#5e5542","background-color":"#e5c990"});
-          });
+    for(let i = 0; i < targetArray.length; i++) {
+      let targetID = targetArray[i].battlefieldId;
+      //Make a planning button for each vaild target
+      let $planningButton = $("<button>").addClass("commandButton");
+      //The text of the planning button
+      if(actionType === "threatenAttack") {
+        $planningButton.text(`${this.name} - Threaten: ${targetArray[i].name}`);
+      } else if (actionType === "disengageAttack"){
+        $planningButton.text(`${this.name} - Disengage: ${targetArray[i].name}`);
+      } else if (actionType === "fullWithdraw"){
+        $planningButton.text(`${this.name} - Withdraw`);
+      } else if (actionType === "earthquake"){
+        $planningButton.text(`${this.name} - Conjure Earthquake: All foes`);
+      }
+
+      $planningButton.on("click", function() {
+        //If this planning button is clicked, the following combat action button will be generated
+        let $combatButton = $("<button>").addClass("combatButton");
+        if(actionType === "threatenAttack") { //Threaten, then attack
+          addToCombatLog(`${buttonOwner.name} is planning to threaten ${targetArray[i].name} with ${buttonOwner.weapon}`);
+          $(`#initEntry${buttonOwner.battlefieldId}`).text(`Threaten: ${targetArray[i].name}`);
+          $combatButton.text(`Next action: ${buttonOwner.name}`)
+          $combatButton.attr("id",`combatButton${buttonOwner.battlefieldId}`);
+          $combatButton.on("click", function() {
+            //This order is VERY important! The next button needs to be shown.
+            $combatButton.remove();
+            buttonOwner.actionThreatenAttack(targetArray[i],1);
+          });//End the combat button definition
+
+        } else if (actionType === "disengageAttack"){ //Disengage, then attack
+          addToCombatLog(`${buttonOwner.name} plans to disengage from ${targetArray[i].name}`);
+          $(`#initEntry${buttonOwner.battlefieldId}`).text(`Disengage: ${targetArray[i].name}`);
+          $combatButton.text(`Next action: ${buttonOwner.name}`)
+          $combatButton.attr("id",`combatButton${buttonOwner.battlefieldId}`);
+          $combatButton.on("click", function() {
+            $combatButton.remove();
+            buttonOwner.actionDisengageAttack(targetArray[i]);
+          });//End the combat button definition
+
+        } else if (actionType==="fullWithdraw") { //Back away from all foes. No attack.
+          addToCombatLog(`${buttonOwner.name} plans to withdraw from all foes!`);
+          $(`#initEntry${buttonOwner.battlefieldId}`).text(`Withdraw`);
+          $combatButton.text(`Next action: ${buttonOwner.name}`)
+          $combatButton.attr("id",`combatButton${buttonOwner.battlefieldId}`);
+          $combatButton.on("click", function() {
+            $combatButton.remove();
+            buttonOwner.actionWithdraw();
+          });//End the combat button definition
+
+        } else if (actionType==="earthquake") { //Back away from all foes. No attack.
+          addToCombatLog(`${buttonOwner.name} plans to conjure an earthquake!`);
+          $(`#initEntry${buttonOwner.battlefieldId}`).text(`Earthquake: All foes`);
+          $combatButton.text(`Next action: ${buttonOwner.name}`)
+          $combatButton.attr("id",`combatButton${buttonOwner.battlefieldId}`);
+          $combatButton.on("click", function() {
+            $combatButton.remove();
+            buttonOwner.conjureEarthquake();
+          });//End the combat button definition
+
         }
 
-        $("#commandList").append($planningButton)
-      }
+        $combatButton.css("display", "none");
+        $("#actionList").append($combatButton);
+
+        $(`#${targetID}Block`).css({"border-color":"#5e5542","background-color":"#e5c990"});
+        $(`#${pcID}Block`).css({"border-color":"#5e5542","background-color":"#e5c990"});
+
+        for (let j = 0; j < highlightIdList.length; j ++) {
+          $(`#${highlightIdList[j]}Block`).css({"border-color":"#5e5542","background-color":"#e5c990"});
+        }
+
+        //This character's turn is planned, move onto the next one
+        buttonOwner.currentBattlefield.planningPhaseController();
+      }); //End 'on click' for planningButton
+
+      $planningButton.on("mouseenter", function() {
+        $(`#${targetID}Block`).css({"border-color":"blue","background-color":"#ffe7b5"});
+        $(`#${pcID}Block`).css({"border-color":"blue","background-color":"#ffe7b5"});
+      });
+
+      $planningButton.on("mouseleave", function() {
+        $(`#${targetID}Block`).css({"border-color":"#5e5542","background-color":"#e5c990"});
+        $(`#${pcID}Block`).css({"border-color":"#5e5542","background-color":"#e5c990"});
+      });
 
 
-
-      //add a 'back' button to let the player reconsider their options.
-      if(targetArray.length > 0) {
-        let $backButton = $("<button>").addClass("commandButton");
-        $backButton.text(`Back to previous options`);
-        $backButton.on("click", function() {
-          buttonOwner.createTurnOptionQuery(0,-1); //This will have to be changed!
+      for (let j = 0; j < highlightIdList.length; j ++) {
+        $planningButton.on("mouseenter", function() {
+          $(`#${highlightIdList[j]}Block`).css({"border-color":"blue","background-color":"#ffe7b5"});
         });
-        $("#commandList").append($backButton);
+        $planningButton.on("mouseleave", function() {
+          $(`#${highlightIdList[j]}Block`).css({"border-color":"#5e5542","background-color":"#e5c990"});
+        });
       }
-    };
 
-
-
-    //Methods for changing the value of stats.
-    alterMaxWounds(valueIn) {
-      this.maxWounds += valueIn;
-      this.restoreWounds(valueIn); //Also changes current vigor+wounds by the same amount.
-    };
-    alterDamage(valueIn) {
-      this.damage += valueIn;
-    };
-    alterMagic(valueIn) {
-      this.magic += valueIn;
-    };
-    alterArmor(valueIn) {
-      this.armor += valueIn;
-    };
-
-
-
-
-    //'Globallly used' methods - called by the global class(es?)
-
-    //Recovers some of this character's wounds (by increasing the value).
-    restoreWounds(amountRecovered = 0, maxRecoveryBool = 0) {
-      if(maxRecoveryBool === 1) { //Max out wounds.
-        this.wounds = this.maxWounds;
-      } else { //Don't go above the max.
-      this.wounds = Math.min(this.maxWounds, this.wounds + amountRecovered);
+      $("#commandList").append($planningButton)
     }
-    this.vigor = this.wounds; //Increase vigor to new maximum.
-    if(this.wounds > 0) { //Resurrection! Might change the requirements for this.
-      this.aliveBool = true;
-      $(`#${this.battlefieldId}Block`).css("backgroundColor", "#e5c990");
+
+
+
+    //add a 'back' button to let the player reconsider their options.
+    if(targetArray.length > 0) {
+      let $backButton = $("<button>").addClass("commandButton");
+      $backButton.text(`Back to previous options`);
+      $backButton.on("click", function() {
+        buttonOwner.createTurnOptionQuery(0,-1); //This will have to be changed!
+      });
+      $("#commandList").append($backButton);
     }
   };
+
+
+  //Leveling methods.
+
+  //Called at the end of each combat, possibly leveling the creature
+  checkForLevelGain() {
+
+
+    if(this.currentExp >= this.nextLevelExp) {
+      this.currentExp -= this.nextLevelExp;
+      this.nextLevelExp = Math.floor(this.nextLevelExp*1.5);
+      console.log(`New level at ${this.nextLevelExp} exp`);
+      console.log("LEVELED");
+      this.gainALevel()
+    } else {
+      console.log(`no level, exp: ${this.currentExp}`);
+    }
+
+  };
+
+  //Used to increase the stats of the character once exp tops off
+  gainALevel() {
+    this.currentLevel++;
+    this.alterMaxWounds(this.woundScaling);
+    if(this.currentLevel % this.damageScaling === 0) {
+      this.alterDamage(1);
+    }
+    if(this.currentLevel % this.magicScaling === 0) {
+      this.alterMagic(1);
+    }
+    if(this.currentLevel % this.armorScaling === 0) {
+      this.alterArmor(1);
+    }
+    if(this.currentLevel % this.threatThresholdScaling === 0) {
+      this.alterThreatThreshold(1);
+    }
+    if(this.currentLevel % this.perceptionScaling === 0) {
+      this.alterPerception(1);
+    }
+    if(this.currentLevel % this.initiativeScaling === 0) {
+      this.alterInitiative(1);
+    }
+    console.log(`${this.name} leveling complete! Hit level ${this.currentLevel}!`);
+  };
+
+  //Methods for changing the value of stats.
+  alterMaxWounds(valueIn) {
+    this.maxWounds += valueIn;
+    this.restoreWounds(valueIn); //Also changes current vigor+wounds by the same amount.
+    this.attachedPlayerGroup.updateMapHealthBlocks();
+    this.currentBattlefield.updateHealthValues();
+  };
+  alterDamage(valueIn) {
+    this.damage += valueIn;
+    this.currentBattlefield.updateAttackArmorThreatValues();
+  };
+  alterMagic(valueIn) {
+    this.magic += valueIn;
+    this.currentBattlefield.updateAttackArmorThreatValues();
+  };
+  alterArmor(valueIn) {
+    this.armor += valueIn;
+    this.currentBattlefield.updateAttackArmorThreatValues();
+  };
+  alterThreatThreshold(valueIn) {
+    this.threatThreshold += valueIn;
+    this.currentBattlefield.updateAttackArmorThreatValues();
+  };
+  alterPerception(valueIn) {
+    this.perception += valueIn;
+    this.currentBattlefield.updateAttackArmorThreatValues();
+  };
+  alterInitiative(valueIn) {
+    this.initiative += valueIn;
+    this.currentBattlefield.updateAttackArmorThreatValues();
+  };
+
+
+
+  //'Globallly used' methods - called by the global class(es?)
+
+  //Recovers some of this character's wounds (by increasing the value).
+  restoreWounds(amountRecovered = 0, maxRecoveryBool = 0) {
+    if(maxRecoveryBool === 1) { //Max out wounds.
+      this.wounds = this.maxWounds;
+    } else { //Don't go above the max.
+    this.wounds = Math.min(this.maxWounds, this.wounds + amountRecovered);
+  }
+  this.vigor = this.wounds; //Increase vigor to new maximum.
+  if(this.wounds > 0) { //Resurrection! Might change the requirements for this.
+    this.aliveBool = true;
+    $(`#${this.battlefieldId}Block`).css("backgroundColor", "#e5c990");
+  }
+};
 
 } //End of Adventurer class
 
@@ -647,20 +736,21 @@ class Enemy extends Creature {
     //Name/weapon/Vigor/Attack/Magic/Armor/Threat/Per/Init/(exp)/Specials
     //Convert into objects for readability
     let enemyDataArray = [
-      ["Shriveled Ghoul", "its claws", 8, 9, 0, 1, 2, 0, 4], //0
-      ["Rusted Sentinel", "a dulled spear", 13, 8, 0, 4, 1, 0, 0], //1
-      ["Warg", "its toothy maw", 15, 10, 0, 2, 1, 8, 6], //2
-      ["Failing Guardian", "a broken axe", 15, 8, 0, 5, 3, 0, 0], //3
-      ["Animated Skeleton", "a rusted blade", 14, 10, 0, 3, 3, 0, 2,"cleave"], //4
-      ["Undead Adventurer", "a longsword", 20, 14, 1, 4, 4, 10, 4], //5
-      ["Rabid Owlbear", "its beak and claws", 34, 15, 0, 4, 3, 0, 0,"cleave"],
-      ["Brass Sentinel", "a spear", 25, 11, 2, 6, 1, 0, 0],
-      ["Unholy Acolyte", "a glowing mace", 24, 15, 4, 5, 2, 5, 3],
-      ["Clockwork Guardian", "a greataxe", 42, 11, 3, 8, 3, 0, 0],
-      ["Steel Sentinel", "a halberd", 36, 16, 3, 8, 1, 0, 0],
-      ["Pact-bound Abyssal", "a spiked arm", 22, 16, 3, 3, 4, 6, 6]
+      {name:"Shriveled Ghoul", weaponDescriptor: "its claws", vigor: 11, damage: 10, magic: 0, armor: 1, threatThreshold: 2, perception: 0, initiative: 4, exp: 3, special: "none", tactic: "rush"}, //0
+      {name:"Rusted Sentinel", weaponDescriptor: "a dulled spear", vigor: 13, damage: 8, magic: 1, armor: 4, threatThreshold: 1, perception: 0, initiative: 0, exp: 3, special: "none", tactic: "rush"}, //1
+      {name:"Warg", weaponDescriptor: "its toothy maw", vigor: 18, damage: 12, magic: 0, armor: 2, threatThreshold: 1, perception: 8, initiative: 6, exp: 4, special: "none", tactic: "threatenAll"},  //2
+      {name:"Failing Guardian", weaponDescriptor: "a broken axe", vigor: 17, damage: 9, magic: 1, armor: 5, threatThreshold: 3, perception: 0, initiative: 1, exp: 4, special: "none", tactic: "guard"}, //3
+      {name:"Animated Skeleton", weaponDescriptor: "a rusted blade", vigor: 21, damage: 13, magic: 1, armor: 3, threatThreshold: 3, perception: 2, initiative: 3, exp: 4, special: "cleave", tactic: "threatenAll"}, //4
+      {name:"Undead Adventurer", weaponDescriptor: "a longsword", vigor: 20, damage: 16, magic: 2, armor: 4, threatThreshold: 4, perception: 4, initiative: 6, exp: 5, special: "none", tactic: "focusDown"}, //5
+      {name:"Rabid Owlbear", weaponDescriptor: "its beak and claws", vigor: 34, damage: 18, magic: 0, armor: 4, threatThreshold: 4, perception: 4, initiative: 2, exp: 6, special: "cleave", tactic: "threatenAll"}, //6
+      {name:"Brass Sentinel", weaponDescriptor: "a spear", vigor: 28, damage: 18, magic: 3, armor: 6, threatThreshold: 2, perception: 4, initiative: 1, exp: 6, special: "none", tactic: "focusDown"}, //7
     ];
-
+    /*
+    ["Unholy Acolyte", "a glowing mace", 24, 15, 4, 5, 2, 5, 3],
+    ["Clockwork Guardian", "a greataxe", 42, 11, 3, 8, 3, 0, 0],
+    ["Steel Sentinel", "a halberd", 36, 16, 3, 8, 1, 0, 0],
+    ["Pact-bound Abyssal", "a spiked arm", 22, 16, 3, 3, 4, 6, 6]
+    */
     //out of place pirate
 
     return enemyDataArray[creatureIndexIn];
@@ -683,19 +773,20 @@ class Enemy extends Creature {
     } else if (levelIndexIn === 1){
       possibleCreatureIndicies = [6]; //Owlbear
     } else if (levelIndexIn === 2){
-      possibleCreatureIndicies = [10]; //Brass S
+      possibleCreatureIndicies = [7]; //Brass S
     }
   }
 
   let selectedIndex = possibleCreatureIndicies[Math.floor(Math.random()*possibleCreatureIndicies.length)];
   let enemyData = Enemy.returnPreBuiltCreature(selectedIndex);
 
-  super(enemyData[0], enemyData[1], enemyData[2], enemyData[3], enemyData[4], enemyData[5], enemyData[6], enemyData[7], enemyData[8]);
+  super(enemyData.name, enemyData.weaponDescriptor, enemyData.vigor, enemyData.damage, enemyData.magic, enemyData.armor, enemyData.threatThreshold, enemyData.perception, enemyData.initiative);
 
-  //this.expValue = enemyData[9];
-  if (enemyData[9] !== undefined) {
-    this.specialAbility = enemyData[9]
-  }
+  this.expValue = enemyData.exp;
+
+  this.specialAbility = enemyData.special;
+
+  this.tactic = enemyData.tactic;
 
 };
 
@@ -790,10 +881,12 @@ class Battlefield {
     let challengeFoeBool = false;
     let numberOfFoes = 2;
 
-    if(currentFloor >= 4) {
+    if(currentFloor >= 3) {
       numberOfFoes = Math.floor(Math.random()*3)+2;
-    } else if (currentFloor >= 2 ){
+    } else if (currentFloor >= 1){
       numberOfFoes = Math.floor(Math.random()*2)+2;
+    } else if (this.playerCharacterList.length === 1) {
+      numberOfFoes = 1;
     }
 
     if (Math.random() < challengeFoeChance) {
@@ -1037,7 +1130,7 @@ class Battlefield {
         //This order is VERY important - don't delete the button until everything has been completed!
 
         $combatButton.remove();
-        if(whosTurn.specialAbility !== undefined) {
+        if(whosTurn.specialAbility === "cleave") {
           whosTurn.actionCleaveThrough();
         } else {
           whosTurn.actionThreatenAttack(selectedTarget,1);
@@ -1123,7 +1216,19 @@ class Battlefield {
     //make a new button (leaveBattle) that does the following - allows the player to see the outcome BEFORE leaving the battle screen
     let theBattlefield = this;
 
-    console.log("GM, CAN WE GET EXP NOW");
+    let expTally = 0;
+
+    for(let i =0; i < this.enemyList.length; i++) {
+      expTally += this.enemyList[i].expValue;
+    }
+
+    addToCombatLog(`The adventurers gained ${expTally} exp`)
+
+    for(let i = 0; i < this.playerCharacterList.length; i++) {
+      this.playerCharacterList[i].currentExp += expTally;
+      this.playerCharacterList[i].checkForLevelGain();
+    }
+
     //check for player levelUps
     //make nice messages
     //assign skill points
@@ -1230,6 +1335,7 @@ class PlayerGroup {
 
   addPC(characterIn) {
     this.playerList.push(characterIn);
+    characterIn.attachedPlayerGroup = this;
   };
 
   returnPCs() {
@@ -1289,8 +1395,6 @@ class PlayerGroup {
     this.connectedBattlefield.updateAttackArmorThreatValues();
     console.log(`${this.playerList[adventurerId].name}'s armor quality was increased!`);
   };
-
-
 
 } //End PlayerGroup class
 
@@ -1380,8 +1484,8 @@ function hideLevelUp() {
 
 let quake = new ForceOfNature();
 
-let garzmok = new Adventurer("Garzmok", "a greatsword", 25, 11, 6, 1, 2, 3, 7);
-let runa = new Adventurer("Runa", "unarmed strikes", 18, 7, 10, 3, 3, 8, 3);
+let garzmok = new Adventurer("Garzmok", "a greatsword", 0); //Gladiator
+let runa = new Adventurer("Runa", "unarmed strikes", 1); //Theurge
 //let talathel = new Adventurer("Talathel", "a rapier", 20, 8, 2, 1,2);
 
 garzmok.connectToAPI(quake);
