@@ -75,7 +75,6 @@ class mapBattleCommunicator {
 
   //Gets and returns the floor level from the groupPosition class.
   getFloorLevel() {
-    console.log("Getting the floor level!");
     return (this.linkedGroupLocation.currentFloor.level);
   }
 
