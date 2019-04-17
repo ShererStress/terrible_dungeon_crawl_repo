@@ -623,67 +623,49 @@ class Enemy extends Creature {
       ["Shriveled Ghoul", "its claws", 8, 9, 0, 1, 2, 0, 4], //0
       ["Rusted Sentinel", "a dulled spear", 13, 8, 0, 4, 1, 0, 0,], //1
       ["Warg", "its toothy maw", 15, 10, 0, 2, 1, 8, 6], //2
-      ["Failing Guardian", "a broken axe", 15, 8, 0, 5, 1, 0, 0] //3
+      ["Failing Guardian", "a broken axe", 15, 8, 0, 5, 1, 0, 0], //3
       ["Animated Skeleton", "a rusted blade", 14, 10, 0, 3, 3, 0, 2], //4
-      ["Undead Adventurer", "a longsword", 20, 12, 1, 4, 3, 10, 4], //5
+      ["Undead Adventurer", "a longsword", 20, 14, 1, 4, 4, 10, 4], //5
+      ["Rabid Owlbear", "a spear", 34, 15, 0, 4, 1, 0, 0],
       ["Brass Sentinel", "a spear", 25, 11, 2, 6, 1, 0, 0],
       ["Unholy Acolyte", "a glowing mace", 24, 15, 4, 5, 2, 5, 3],
       ["Steel Sentinel", "a halberd", 36, 16, 3, 8, 1, 0, 0],
-      ["Pact-bound Abyssal", "a spiked arm", 22, 16, 3, 3, 4, 6, 6],
+      ["Pact-bound Abyssal", "a spiked arm", 22, 16, 3, 3, 4, 6, 6]
     ];
 
-
+    //out of place pirate
 
     return enemyDataArray[creatureIndexIn];
   };
 
   //Lets mess with constructors to see what can happen
-  constructor(levelIndexIn, nameAddition = "", challengeFoeBool = false) {
-
+  constructor(levelIndexIn, challengeFoeBool = false) {
+    console.log(`newfoeslevel: ${levelIndexIn}, Challengebool: ${challengeFoeBool}`);
     let possibleCreatureIndicies;
     if(!challengeFoeBool) { //Default foe
-      switch (levelIndexIn) {
-        case (0): { //Level 1
-          possibleCreatureIndicies = [0,1]; //ghoul, rusted S.
-        };
-        case (1): { //2
-          possibleCreatureIndicies = [0,2,3]; //ghoul, warg, Failing G.
-        };
-        case (2): { //3
-          possibleCreatureIndicies = [1,3,4]; //Rusted S, failing G, skeleton
-        };
-        case (3): { //4
-          possibleCreatureIndicies = [0,1];
-        };
-        case (4): { //5
-          possibleCreatureIndicies = [0,1];
-        };
-      }; //End switch
+      if (levelIndexIn === 0) {
+        possibleCreatureIndicies = [0,1]; //ghoul, rusted S.
+      } else if (levelIndexIn === 1){
+        possibleCreatureIndicies = [0,2,3]; //ghoul, warg, Failing G.
+      } else if (levelIndexIn === 2){
+        possibleCreatureIndicies = [1,3,4]; //Rusted S, failing G, skeleton
+      }
     } else { //It's an F.O.E.! Kinda
-      switch (levelIndexIn) {
-        case (0): { //Level 1
-          possibleCreatureIndicies = [4]; //Skeleton
-        };
-        case (1): { //2
-          possibleCreatureIndicies = [5]; //Adventurer
-        };
-        case (2): { //3
-          possibleCreatureIndicies = [6; //Brass S
-        };
-        case (3): { //4
-          possibleCreatureIndicies = [0,1];
-        };
-        case (4): { //5
-          possibleCreatureIndicies = [0,1];
-        };
-      }; //End switch
+    if (levelIndexIn === 0) {
+      possibleCreatureIndicies = [5]; //Adventurer
+    } else if (levelIndexIn === 1){
+      possibleCreatureIndicies = [6]; //Owlbear
+    } else if (levelIndexIn === 2){
+      possibleCreatureIndicies = [7]; //Brass S
     }
+  }
 
 
   let selectedIndex = possibleCreatureIndicies[Math.floor(Math.random()*possibleCreatureIndicies.length)];
-  let enemyData = Enemy.returnPreBuiltCreature(creatureIndexIn);
+  console.log(`selected index ${selectedIndex}`);
+  let enemyData = Enemy.returnPreBuiltCreature(selectedIndex);
 
-  super(`${enemyData[0]}${nameAddition}`, enemyData[1], enemyData[2], enemyData[3], enemyData[4], enemyData[5], enemyData[6], enemyData[7], enemyData[8]);
+  super(enemyData[0], enemyData[1], enemyData[2], enemyData[3], enemyData[4], enemyData[5], enemyData[6], enemyData[7], enemyData[8]);
 
   //this.expValue = enemyData[9];
 };
@@ -747,30 +729,37 @@ class Battlefield {
 
   //Called once at the start of each fight. Generates foes (abstract this part eventually), and resets any necissary variables from the last fight.
   startCombat() {
-
+    //make this stuff its own function
     //Decides on and generates a number of foes to fight. Update to pull information from the map side!
-    //Trying to put together a decently balanced enemy generation method. MATH
-    //8-10; 12-16; 16-22; 20-28
+
+    //Get from the map screen! Use commlink
     let currentFloor = 0;
-    let enemyBudget = 8+4*(currentFloor)+Math.ceil(Math.random()*2*(1+currentFloor));
-    //cost = 3+2*arrayIndex -> 3,5,7,9,11..
-    //0+1; 2; 3+4;
-    let maxEnemyIndex = Math.floor(((4+3*currentFloor)/2)-1);
-    let numberOfFoes = Math.floor(Math.random()*3)+2;
+    let challengeFoeChance = 0.9;
+    let challengeFoeBool = false;
+    let numberOfFoes = Math.floor(Math.random()*2)+2;
+
+    if (Math.random() < challengeFoeChance) {
+      numberOfFoes = 1;
+      challengeFoeBool = true;
+    }
+
     let enemyNameNumbers = {};
+    console.log(`Number o' foes: ${numberOfFoes}`);
     for (let i = 0; i < numberOfFoes; i++) {
-      let enemyTypeIndex = Math.floor(Math.random()*2);
-      let newEnemy;
-      if(enemyNameNumbers[`${enemyTypeIndex}`] === undefined) {
-        newEnemy = new Enemy(enemyTypeIndex, "");
-        enemyNameNumbers[`${enemyTypeIndex}`] = 1;
+      let newEnemy = new Enemy(currentFloor, challengeFoeBool);
+      let baseName = newEnemy.name;
+      if(enemyNameNumbers[`${baseName}`] === undefined) {
+        enemyNameNumbers[`${baseName}`] = 1;
       } else {
-        enemyNameNumbers[`${enemyTypeIndex}`]++;
-        newEnemy = new Enemy(enemyTypeIndex, ` ${enemyNameNumbers[`${enemyTypeIndex}`]}`);
+        enemyNameNumbers[`${baseName}`]++;
+        newEnemy.name += ` ${enemyNameNumbers[`${baseName}`]}`;
       }
+
       //let newEnemy = new Enemy(enemyTypeIndex,`${i+1}`);
       this.enemyList.push(newEnemy);
     }
+
+
     //Makes the battlefield aware of the foes, and them aware of it.
     for(let i =0; i < this.enemyList.length; i++) {
       this.enemyList[i].currentBattlefield = this;
