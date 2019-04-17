@@ -4,17 +4,10 @@ Engaging too many foes causes the character to become overwhelmed, taking penali
 
 Actions:
 Engage target (up to limit)  --- Working!
-Ability use
+Ability use --Working!
 Guard ally(redirects threat from attacker(s))
-Disengage/withdraw
-Shift stance(STRETCH)
+Disengage/withdraw -- Working!
 
-// todo:
-
-removing creatures is a bit more complex, as they exist in:
-every foe's engagement arrays
-~initative order (s)
-~list of foes --- Done!
 
 */
 
@@ -105,11 +98,16 @@ $(()=>{ //Start jQuery
 
 
     //Applies damage to this creature. If the damage brings it below 0 vigor, it dies.
-    takeDamage(incomingDamage) {
+    takeDamage(incomingDamage, ignoreArmorBool = 0) {
       //Armor mitigates damage on a 1-to-1 basis.
       let effectiveArmor = this.calculateDR();
-      //An attack always deals 1 damage.
-      let damageTaken = Math.max(incomingDamage-effectiveArmor,1);
+      let damageTaken;
+
+      if(ignoreArmorBool) {
+        damageTaken = incomingDamage;
+      } else {
+        damageTaken = Math.max(incomingDamage-effectiveArmor,1); //Always take 1 damage
+      }
       this.vigor -= damageTaken;
       this.currentBattlefield.updateHealthValues();
       addToCombatLog(`${this.name} took ${damageTaken} damage!`)
@@ -304,7 +302,10 @@ conjureEarthquake() {
       for(let i = 0; i < conjuringCreature.currentBattlefield.enemyList.length; i++) {
         let targetCreature = conjuringCreature.currentBattlefield.enemyList[i];
         if (targetCreature.aliveBool) {
-          targetCreature.takeDamage(Math.floor(returnedMagnitude*(conjuringCreature.magic/3)));
+          console.log(`Mag: ${returnedMagnitude}`);
+          console.log(`Mag: ${conjuringCreature.magic/3}`);
+          console.log(Math.floor(returnedMagnitude*(conjuringCreature.magic/3)));
+          targetCreature.takeDamage(Math.floor(returnedMagnitude*(conjuringCreature.magic/3)),1); //Ignore armor!
         }
       }
       conjuringCreature.currentBattlefield.combatPhaseController();
@@ -351,8 +352,13 @@ class Adventurer extends Creature {
 
   //Damage is applied to vigor before wounds, but if enough vigor is lost in a single hit, some vigor damage is converted into wound 'chip damage'.
   //This also generates a message to let the player how much damage of each type was applied.
-  takeDamage(incomingDamage) {
-    let damageTaken = Math.max(incomingDamage-this.calculateDR(),1); //Always take 1 damage
+  takeDamage(incomingDamage, ignoreArmorBool = 0) {
+    let damageTaken;
+    if(ignoreArmorBool) {
+      damageTaken = incomingDamage;
+    } else {
+      damageTaken = Math.max(incomingDamage-this.calculateDR(),1); //Always take 1 damage
+    }
     //This is the wound chip damage
     let woundChipDamage = Math.floor(damageTaken/5);
     damageTaken -= woundChipDamage; //Vigor damage is CONVERTED to wound chip damage
@@ -584,10 +590,19 @@ class Adventurer extends Creature {
 
 
 
-  //Method for changing the value of maxWounds. Also changes current vigor+wounds by the same amount.
+  //Methods for changing the value of stats.
   alterMaxWounds(valueIn) {
     this.maxWounds += valueIn;
-    this.restoreWounds(valueIn);
+    this.restoreWounds(valueIn); //Also changes current vigor+wounds by the same amount.
+  };
+  alterDamage(valueIn) {
+    this.damage += valueIn;
+  };
+  alterMagic(valueIn) {
+    this.magic += valueIn;
+  };
+  alterArmor(valueIn) {
+    this.armor += valueIn;
   };
 
 
@@ -702,9 +717,13 @@ class Battlefield {
     //Use to indicate which adventurer's planning turn it is
     this.currentPlayerCharacter = 0;
 
-    //Unused for now
+    //Used for determining who inputs commands when. Higher is better - you will know what others will do before having to decide what to do yourself.
     this.perceptionList = [];
+    //Used for determining action order. Higher is better - you go first!
     this.initiativeList = [];
+
+    //The well-thought-out inter-js communication class
+    this.commLink;
 
     //The next 10 lines initialize the html for the first fight, but the fight won't be triggered just yet.
     let theBattlefield = this;
@@ -732,33 +751,7 @@ class Battlefield {
     //make this stuff its own function
     //Decides on and generates a number of foes to fight. Update to pull information from the map side!
 
-    //Get from the map screen! Use commlink
-    let currentFloor = 0;
-    let challengeFoeChance = 0.9;
-    let challengeFoeBool = false;
-    let numberOfFoes = Math.floor(Math.random()*2)+2;
-
-    if (Math.random() < challengeFoeChance) {
-      numberOfFoes = 1;
-      challengeFoeBool = true;
-    }
-
-    let enemyNameNumbers = {};
-    console.log(`Number o' foes: ${numberOfFoes}`);
-    for (let i = 0; i < numberOfFoes; i++) {
-      let newEnemy = new Enemy(currentFloor, challengeFoeBool);
-      let baseName = newEnemy.name;
-      if(enemyNameNumbers[`${baseName}`] === undefined) {
-        enemyNameNumbers[`${baseName}`] = 1;
-      } else {
-        enemyNameNumbers[`${baseName}`]++;
-        newEnemy.name += ` ${enemyNameNumbers[`${baseName}`]}`;
-      }
-
-      //let newEnemy = new Enemy(enemyTypeIndex,`${i+1}`);
-      this.enemyList.push(newEnemy);
-    }
-
+    this.createEnemies();
 
     //Makes the battlefield aware of the foes, and them aware of it.
     for(let i =0; i < this.enemyList.length; i++) {
@@ -771,6 +764,46 @@ class Battlefield {
     this.displayBattlefield();
   }
 
+
+  //Handles creates a group of foes to fight at the start of each encounter
+  createEnemies() {
+
+
+
+    //Get from the map screen! Use commlink
+    let currentFloor = this.commLink.getFloorLevel();
+    console.log(currentFloor);
+    let challengeFoeChance = 0.2;
+    let challengeFoeBool = false;
+    let numberOfFoes = 2;
+
+    if(currentFloor >= 4) {
+      numberOfFoes = Math.floor(Math.random()*3)+2;
+    } else if (currentFloor >= 2 ){
+      numberOfFoes = Math.floor(Math.random()*2)+2;
+    }
+
+    if (Math.random() < challengeFoeChance) {
+      numberOfFoes = 1;
+      challengeFoeBool = true;
+    }
+
+    let enemyNameNumbers = {};
+    for (let i = 0; i < numberOfFoes; i++) {
+      let newEnemy = new Enemy(currentFloor, challengeFoeBool);
+      let baseName = newEnemy.name;
+      if(enemyNameNumbers[`${baseName}`] === undefined) {
+        enemyNameNumbers[`${baseName}`] = 1;
+      } else {
+        enemyNameNumbers[`${baseName}`]++;
+        newEnemy.name += ` ${enemyNameNumbers[`${baseName}`]}`;
+      }
+
+      this.enemyList.push(newEnemy);
+    }
+  };
+
+
   //Adds dynamic html elements. Call once at start of combat, but can also be used to refresh everything about all statblocks.
   displayBattlefield(initialFight = false) {
     this.createPCStatBlocks();
@@ -781,6 +814,7 @@ class Battlefield {
     }
 
   };
+
 
   //Sets up player statblocks. Currently has name, health values, health bar, attack and armor, and threat. When altering, watch the order carefully!
   createPCStatBlocks() {
@@ -1205,14 +1239,29 @@ class PlayerGroup {
     }
   };
 
-  //Used in increase a character's maximum wounds. Called only in the map screen.
-  increaseHealth() {
+  //Used in increase a character's maximum stats. Called only in the map screen.
+  increaseHealth(adventurerId) {
     let amount = 2;
-    for(let i = 0; i < this.playerList.length; i++) {
-      this.playerList[i].alterMaxWounds(amount);
-    }
+    this.playerList[adventurerId].alterMaxWounds(amount);
     this.updateMapHealthBlocks();
     this.connectedBattlefield.updateHealthValues();
+  };
+  increaseDamage(adventurerId) {
+    let amount = 1;
+    this.playerList[adventurerId].alterDamage(amount);
+    this.updateMapHealthBlocks();
+    this.connectedBattlefield.updateAttackArmorThreatValues();
+  };
+  increaseMagic(adventurerId) {
+    let amount = 1;
+    this.playerList[adventurerId].alterMagic(amount);
+    this.updateMapHealthBlocks();
+    this.connectedBattlefield.updateAttackArmorThreatValues();
+  };
+  increaseArmor(adventurerId) {
+    let amount = 1;
+    this.playerList[adventurerId].alterArmor(amount);
+    this.connectedBattlefield.updateAttackArmorThreatValues();
   };
 
 
@@ -1305,8 +1354,8 @@ function hideLevelUp() {
 
 let quake = new ForceOfNature();
 
-let garzmok = new Adventurer("Garzmok", "a greatsword", 25, 10, 6, 1, 2, 3, 7);
-let runa = new Adventurer("Runa", "unarmed strikes", 18, 7, 12, 3, 3, 8, 3);
+let garzmok = new Adventurer("Garzmok", "a greatsword", 25, 11, 6, 1, 2, 3, 7);
+let runa = new Adventurer("Runa", "unarmed strikes", 18, 7, 10, 3, 3, 8, 3);
 //let talathel = new Adventurer("Talathel", "a rapier", 20, 8, 2, 1,2);
 
 garzmok.connectToAPI(quake);
@@ -1324,7 +1373,20 @@ mbComms.commLinkToBattlefield(fightOne);
 
 //quake.getExternalData();
 
-$("#increaseHealth").on("click", function() {partyOne.increaseHealth(); });
+
+//Move these inside the PlayerGroup Class, creaating them as party members are added!
+$("#increaseHealth0").on("click", function() {partyOne.increaseHealth(0); });
+$("#increaseHealth1").on("click", function() {partyOne.increaseHealth(1); });
+
+$("#increaseDamage0").on("click", function() {partyOne.increaseDamage(0); });
+$("#increaseDamage1").on("click", function() {partyOne.increaseDamage(1); });
+
+$("#increaseMagic0").on("click", function() {partyOne.increaseMagic(0); });
+$("#increaseMagic1").on("click", function() {partyOne.increaseMagic(1); });
+
+$("#increaseArmor0").on("click", function() {partyOne.increaseArmor(0); });
+$("#increaseArmor1").on("click", function() {partyOne.increaseArmor(1); });
+
 
 
 

@@ -23,6 +23,8 @@ class mapBattleCommunicator {
     //The battlefield the PCs and foes exist in
     this.linkedBattlefield;
     this.linkedPlayerGroup;
+
+    this.linkedGroupLocation;
   }
 
   //Add a PC to the list
@@ -33,7 +35,8 @@ class mapBattleCommunicator {
   //Add the battlefield
   commLinkToBattlefield(battlefieldIn) {
     this.linkedBattlefield = battlefieldIn;
-  }
+    battlefieldIn.commLink = this;
+  };
 
   commLinkToPlayerGroup(groupIn) {
     this.linkedAdventurerList.length = 0;
@@ -42,7 +45,12 @@ class mapBattleCommunicator {
     for(let i = 0; i < newAdventurerList.length; i++) {
       this.commAddTolinkedAdventurerList(newAdventurerList[i]);
     }
-  }
+  };
+
+  commLinktoGroupLocation(locationIn) {
+    this.linkedGroupLocation = locationIn;
+    locationIn.commLink = this;
+  };
 
   //Recovers the wounds of a single adventurer. If the amount is = -1, it fully heals them.
   commRemoveWoundsSingleTarget(targetAdventurerIndex = 0, woundRecoveryAmount = 0) {
@@ -65,6 +73,11 @@ class mapBattleCommunicator {
     }
   };
 
+  //Gets and returns the floor level from the groupPosition class.
+  getFloorLevel() {
+    console.log("Getting the floor level!");
+    return (this.linkedGroupLocation.currentFloor.level);
+  }
 
 } //End mapBattleCommunicator class
 
@@ -285,6 +298,8 @@ $(()=>{ //Start jQuery
       displayMap(this.currentFloor.mapData);
       //Used to determine if a battle is going to occur
       this.encounterChance = 0;
+
+      this.commLink;
     }
 
 
@@ -470,8 +485,8 @@ $(()=>{ //Start jQuery
 
       //Add in a floor. Added to the end of the list
       assembleNewFloor (mapDataIn) {
-        const newFloor = new FloorData(this.name + ", level " + (this.floorList.length+1), mapDataIn);
-        newFloor.level = (this.floorList.length+1);
+        const newFloor = new FloorData(this.name + ", level " + (this.floorList.length), mapDataIn);
+        newFloor.level = (this.floorList.length);
         this.floorList.push(newFloor);
       };
 
@@ -744,9 +759,8 @@ $(()=>{ //Start jQuery
     };
 
 
+
     //Run these initially.
-
-
 
     const theSpire = new TowerOfFloors("The Spire");
     theSpire.assembleNewFloor(FloorData.floorLayouts()[0]);
@@ -756,5 +770,7 @@ $(()=>{ //Start jQuery
     //theSpire.listFloors();
 
     const theParty = new GroupLocation(theSpire,0,0);
+
+    mbComms.commLinktoGroupLocation(theParty);
 
   }); //End jQuery
