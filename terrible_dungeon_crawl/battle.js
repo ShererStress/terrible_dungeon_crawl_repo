@@ -130,7 +130,7 @@ $(()=>{ //Start jQuery
     //Calculates the effective armor of the creature. This is allows to go negative!
     calculateDR() {
       let effectiveArmor = this.armor;
-      if(this.overwhelmedState === 2) {
+      if(this.overwhelmedState === 3) {
         effectiveArmor -= (this.totalThreat - this.threatThreshold);
       }
       return(effectiveArmor);
@@ -146,7 +146,7 @@ $(()=>{ //Start jQuery
         return;
       }
       //If this creature is trying to generate more threat, it won't be able to if it is at or above its threatThreshold
-      if(this.overwhelmedState >= 1 && reciprocateBoolean === 1) {
+      if(this.overwhelmedState >= 2 && reciprocateBoolean === 1) {
         addToCombatLog(`${this.name} can't threaten another foe - they are busy with their current targets!`);
       } else {
         //Search list of engaged targets for the foe. If it exists, increase the threat level, otherwise, add the creatue to the list and generate 1 threat.
@@ -189,13 +189,16 @@ $(()=>{ //Start jQuery
         totalProblems += this.threatenedFoes[i][1];
       }
       this.totalThreat = totalProblems;
-      if(this.totalThreat >= this.threatThreshold) {
-        this.overwhelmedState = 1;
-        if (this.totalThreat > this.threatThreshold) {
-          this.overwhelmedState = 2;
+      if(this.totalThreat > 0) {
+        this.overwhelmedState = 1; //Threatened, below threshold
+        if (this.totalThreat >= this.threatThreshold) {
+          this.overwhelmedState = 2; //Threatened, at threshold
+          if(this.totalThreat > this.threatThreshold) {
+            this.overwhelmedState = 3; //Threatened, over threshold - OVERWHELEMED
+          }
         }
       } else {
-        this.overwhelmedState = 0;
+        this.overwhelmedState = 0; //No threat
       }
       //Now update everything's Atk/Arm/Threat values
       this.currentBattlefield.updateAttackArmorThreatValues();
@@ -274,8 +277,8 @@ $(()=>{ //Start jQuery
     //Conjures an earthquake! Deals direct damage. Different structure due to API access delays.
     conjureEarthquake() {
       let conjuringCreature = this;
-      let currentThreat = this.updateTotalThreat(); //Should change around overwhelmedState to use that instead
-      if(this.aliveBool && currentThreat === 0) {
+      //let currentThreat = this.updateTotalThreat(); //Should change around overwhelmedState to use that instead
+      if(this.aliveBool && this.overwhelmedState === 0) {
         addToCombatLog(`${this.name} conjured an earthquake underneath the foes!`)
         this.attachedAPI.getExternalData(function(returnedMagnitude) {
 
@@ -293,7 +296,7 @@ $(()=>{ //Start jQuery
       } else if (!this.aliveBool) {
         addToCombatLog(`${this.name} was slain before it could act.`)
         this.currentBattlefield.combatPhaseController();
-      } else if (currentThreat > 0) {
+      } else if (this.overwhelmedState > 0) {
         addToCombatLog(`${this.name} is being threatened and isn't able to concentrate on the spell!`);
         this.currentBattlefield.combatPhaseController();
       }
@@ -677,7 +680,9 @@ class Adventurer extends Creature {
   //Methods for changing the value of stats.
   alterMaxWounds(valueIn) {
     this.maxWounds += valueIn;
-    this.restoreWounds(valueIn); //Also changes current vigor+wounds by the same amount.
+    if(this.aliveBool) {
+      this.restoreWounds(valueIn); //Also changes current vigor+wounds by the same amount... if they are alive.
+    }
     this.attachedPlayerGroup.updateMapHealthBlocks();
     this.currentBattlefield.updateHealthValues();
   };
@@ -705,7 +710,6 @@ class Adventurer extends Creature {
     this.initiative += valueIn;
     this.currentBattlefield.updateAttackArmorThreatValues();
   };
-
 
 
   //'Globallly used' methods - called by the global class(es?)
@@ -1131,7 +1135,11 @@ class Battlefield {
 
         $combatButton.remove();
         if(whosTurn.specialAbility === "cleave") {
-          whosTurn.actionCleaveThrough();
+          if(whosTurn.threatenedFoes.length > 0) {
+            whosTurn.actionCleaveThrough();
+          } else {
+            whosTurn.actionThreatenAttack(selectedTarget,1);
+          }
         } else {
           whosTurn.actionThreatenAttack(selectedTarget,1);
         }
@@ -1291,6 +1299,9 @@ class Battlefield {
 
     let yOneStart = Math.round(400-100*numberPCs);
     let yTwoStart = Math.round(375-75*numberEnemies);
+    let pcStatBlockHeight = 200;
+    let enemyStatBlockheight = 150;
+    let drawAreaWidth = 300
     //Assuming default height of 600px, width of 300px
     for(let i = 0; i < this.playerCharacterList.length; i++) {
       let currentCharThreat = this.playerCharacterList[i].threatenedFoes;
@@ -1308,8 +1319,8 @@ class Battlefield {
             lineColor = "#e5c990";
           }
           let currentEnemyNumber = currentCharThreat[j][0].battlefieldId.slice(-1);
-          let $newLine = $("<line>").attr("x1","0").attr("y1",`${yOneStart+200*i}`);
-          $newLine.attr("x2","300").attr("y2",`${yTwoStart+(150*currentEnemyNumber)}`);
+          let $newLine = $("<line>").attr("x1","0").attr("y1",`${yOneStart+pcStatBlockHeight*i}`);
+          $newLine.attr("x2",`${drawAreaWidth}`).attr("y2",`${yTwoStart+(enemyStatBlockheight*currentEnemyNumber)}`);
           $newLine.attr("style",`stroke:${lineColor};stroke-width:${lineWidth}`);
           $drawArea.append($newLine);
         }
