@@ -1518,6 +1518,9 @@ mbComms.commLinkToBattlefield(fightOne);
 
 //quake.getExternalData();
 
+if(screen.width <= 600) {
+  alert("I see you are using a phone for this. \n\n\n Please reconsider.")
+}
 
 //Move these inside the PlayerGroup Class; create them (and surrounding HTML) as party members are added!
 $("#increaseHealth0").on("click", function() {partyOne.increaseHealth(0); });

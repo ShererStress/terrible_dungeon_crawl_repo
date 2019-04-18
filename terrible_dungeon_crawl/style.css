@@ -288,6 +288,10 @@ modal {
   display: none;
 }
 
+.menuButtons{
+  background-color: white;
+  border-radius: 2px;
+}
 
 .menuButtons:hover{
   background: rgba(100, 100, 100, .6);
@@ -390,10 +394,10 @@ roomDiv {
     /* transform: rotate(90deg) translate(50%,0%); */
     margin: 0;
     padding: 0;
-    background-color: red;
+    /* background-color: red; */
     position: relative;
     font-family: 'Press Start 2P', cursive;
-    font-size: 12px;
+    font-size: 1em;
     overflow: scroll;
   }
 
@@ -568,12 +572,13 @@ roomDiv {
 
   .centerTextbox{
     background-color: #e5c990;
-  	height: 350px;
-  	width: 550px;
+  	height: 35em;
+  	width: 35em;
   	border-radius: 3px;
-  	margin: 150px auto;
+  	margin: 5em 0 0 5em;
     border: 3px solid white;
     text-align: center;
+    font-size: .3em;
   }
 
   #mapHealthBarZone {
