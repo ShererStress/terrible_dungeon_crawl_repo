@@ -28,7 +28,7 @@ class mapBattleCommunicator {
   }
 
   //Add a PC to the list
-  commAddTolinkedAdventurerList(adventurerIn) {
+  commAddToLinkedAdventurerList(adventurerIn) {
     this.linkedAdventurerList.push(adventurerIn);
   };
 
@@ -43,8 +43,9 @@ class mapBattleCommunicator {
     this.linkedPlayerGroup = groupIn;
     let newAdventurerList = this.linkedPlayerGroup.returnPCs();
     for(let i = 0; i < newAdventurerList.length; i++) {
-      this.commAddTolinkedAdventurerList(newAdventurerList[i]);
+      this.commAddToLinkedAdventurerList(newAdventurerList[i]);
     }
+    groupIn.commLink = this;
   };
 
   commLinktoGroupLocation(locationIn) {

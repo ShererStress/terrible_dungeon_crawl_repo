@@ -337,9 +337,9 @@ class Adventurer extends Creature {
   static returnAdventurerClass(classIndexIn) {
 
     let classDataArray = [
-      {className: "Gladiator", maxWounds: 20, damage: 11, magic: 4, armor: 1, threatThreshold: 2, perception: 3, initiative: 7, woundScaling:4, damageScaling:3, magicScaling: 4, armorScaling: 3, threatThresholdScaling: 6, perceptionScaling: 3, initiativeScaling: 2},
-      {className: "Theurge", maxWounds: 15, damage: 7, magic: 8, armor: 2, threatThreshold: 3, perception: 5, initiative: 3, woundScaling:3, damageScaling:4, magicScaling: 2, armorScaling: 2, threatThresholdScaling: 5, perceptionScaling: 2, initiativeScaling: 3},
-      {className: "Duelist", maxWounds: 15, damage: 14, magic: 6, armor: 2, threatThreshold: 1, perception: 8, initiative: 9, woundScaling:3, damageScaling:2, magicScaling: 3, armorScaling: 2, threatThresholdScaling: 7, perceptionScaling: 2, initiativeScaling: 2},
+      {className: "Gladiator", maxWounds: 20, damage: 9, magic: 4, armor: 1, threatThreshold: 2, perception: 3, initiative: 7, woundScaling:3, damageScaling:4, magicScaling: 5, armorScaling: 4, threatThresholdScaling: 7, perceptionScaling: 4, initiativeScaling: 3},
+      {className: "Theurge", maxWounds: 15, damage: 7, magic: 8, armor: 2, threatThreshold: 3, perception: 5, initiative: 3, woundScaling:2, damageScaling:5, magicScaling: 3, armorScaling: 3, threatThresholdScaling: 6, perceptionScaling: 3, initiativeScaling: 4},
+      {className: "Duelist", maxWounds: 16, damage: 11, magic: 6, armor: 2, threatThreshold: 1, perception: 8, initiative: 9, woundScaling:2, damageScaling:3, magicScaling: 4, armorScaling: 3, threatThresholdScaling: 8, perceptionScaling: 3, initiativeScaling: 3},
     ];
     return classDataArray[classIndexIn];
   };
@@ -815,6 +815,7 @@ class Battlefield {
     this.attachedPlayerGroup = playerGroupIn; //Use when adding new party member?
     this.attachedPlayerGroup.connectedBattlefield = this;
 
+    //These refer to the same array, and therefore automatically the same!
     this.playerCharacterList = playerGroupIn.playerList;
     //The list of foes to fight in the current battle
     this.enemyList = [];
@@ -846,6 +847,13 @@ class Battlefield {
     $("#commandZone").append($newInitButton);
     this.displayBattlefield(true);
   }
+
+  addNewPC() {
+    this.createPCStatBlocks();
+    let i = this.playerCharacterList.length-1;
+    this.playerCharacterList[i].currentBattlefield = this;
+    this.playerCharacterList[i].battlefieldId = `pc${i}`;
+  };
 
   /* For now:
   function order:
@@ -1242,6 +1250,7 @@ class Battlefield {
     let $leaveBattleButton = $("<button>").text("-Resume exploration-");
     $leaveBattleButton.addClass("commandButton");
     $leaveBattleButton.on("click", function() {
+
       $("#initativeOrderList").empty();
       //hide combat overlay
       $("#combatOverlay").hide();
@@ -1279,7 +1288,8 @@ class Battlefield {
       theBattlefield.createEnemyStatBlocks();
       clearCombatLog();
       this.remove();
-      addToCombatLog("More foes.")
+      addToCombatLog("More foes.");
+
 
     }); //End leaveBattleButton on click
 
@@ -1351,11 +1361,19 @@ class PlayerGroup {
   constructor() {
     this.playerList = []
     this.connectedBattlefield;
+    this.commLink;
   };
 
   addPC(characterIn) {
     this.playerList.push(characterIn);
     characterIn.attachedPlayerGroup = this;
+    if(this.connectedBattlefield !== undefined) {
+      this.connectedBattlefield.addNewPC();
+    }
+    if(this.commLink !== undefined) {
+      this.commLink.commAddToLinkedAdventurerList(characterIn);
+    }
+    this.updateMapHealthBlocks()
   };
 
   returnPCs() {
@@ -1510,15 +1528,15 @@ let quake = new ForceOfNature();
 
 let garzmok = new Adventurer("Garzmok", "a greatsword", 0); //Gladiator
 let runa = new Adventurer("Runa", "unarmed strikes", 1); //Theurge
-let talathel = new Adventurer("Gilthorn", "a rapier", 2);
+let gilthorn = new Adventurer("Gilthorn", "a rapier", 2);
 
 garzmok.connectToAPI(quake);
 runa.connectToAPI(quake);
 
 let partyOne = new PlayerGroup();
 partyOne.addPC(garzmok);
-partyOne.addPC(runa);
-partyOne.addPC(talathel);
+//partyOne.addPC(runa);
+//partyOne.addPC(talathel);
 
 partyOne.updateMapHealthBlocks();
 mbComms.commLinkToPlayerGroup(partyOne);
@@ -1533,8 +1551,8 @@ if(screen.width <= 600) {
 }
 
 //Move these inside the PlayerGroup Class; create them (and surrounding HTML) as party members are added!
-$("#increaseHealth0").on("click", function() {partyOne.increaseHealth(0); });
-$("#increaseHealth1").on("click", function() {partyOne.increaseHealth(1); });
+$("#increaseHealth0").on("click", function() {partyOne.addPC(gilthorn); });
+$("#increaseHealth1").on("click", function() {partyOne.addPC(runa);; });
 
 $("#increaseDamage0").on("click", function() {partyOne.increaseDamage(0); });
 $("#increaseDamage1").on("click", function() {partyOne.increaseDamage(1); });
