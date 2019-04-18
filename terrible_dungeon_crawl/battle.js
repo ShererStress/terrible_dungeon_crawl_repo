@@ -651,8 +651,8 @@ class Adventurer extends Creature {
     this.currentLevel++;
     addToCombatLog(`${this.name} advanced to level ${this.currentLevel}!`);
     let levelingMessage = "";
-    if(this.currentLevel%4 === 0) {
-      this.unusedSkillPoints++; //Gain a skillpoint every 4 levels
+    if(this.currentLevel%3 === 0) {
+      this.unusedSkillPoints++; //Gain a skillpoint every 3 levels
       $("#levelUpButton").addClass("menuButtonsGold");
       levelingMessage += "Skill Point gained! ";
     }
@@ -769,7 +769,7 @@ class Enemy extends Creature {
       {name:"Failing Guardian", weaponDescriptor: "a broken axe", vigor: 17, damage: 9, magic: 1, armor: 5, threatThreshold: 3, perception: 0, initiative: 1, exp: 4, special: "none", tactic: "guard"}, //3
       {name:"Animated Skeleton", weaponDescriptor: "a rusted blade", vigor: 21, damage: 13, magic: 1, armor: 3, threatThreshold: 3, perception: 2, initiative: 3, exp: 4, special: "cleave", tactic: "threatenAll"}, //4
       {name:"Undead Adventurer", weaponDescriptor: "a longsword", vigor: 20, damage: 16, magic: 2, armor: 4, threatThreshold: 4, perception: 4, initiative: 6, exp: 5, special: "none", tactic: "focusDown"}, //5
-      {name:"Rabid Owlbear", weaponDescriptor: "its beak and claws", vigor: 34, damage: 18, magic: 0, armor: 4, threatThreshold: 4, perception: 4, initiative: 2, exp: 6, special: "cleave", tactic: "threatenAll"}, //6
+      {name:"Rabid Owlbear", weaponDescriptor: "its beak and claws", vigor: 34, damage: 16, magic: 0, armor: 3, threatThreshold: 3, perception: 4, initiative: 2, exp: 6, special: "cleave", tactic: "threatenAll"}, //6
       {name:"Brass Sentinel", weaponDescriptor: "a spear", vigor: 28, damage: 18, magic: 3, armor: 6, threatThreshold: 2, perception: 4, initiative: 1, exp: 6, special: "none", tactic: "focusDown"}, //7
     ];
     /*
