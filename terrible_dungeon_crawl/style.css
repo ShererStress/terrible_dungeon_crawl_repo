@@ -459,15 +459,15 @@ roomDiv {
 
   #commandZone{
     background-color: #404959;
-    width: 30vh;
-    height: 80vw;
+    width: 40%;
+    height: 100%;
     /* border-right: 3px solid #5e5542; */
     position: relative;
   }
 
   #playerCharacterZone {
-    height: 80vw;
-    width: 30vh;
+    width: 20%;
+    height: 100%;
     background-color: #404959;
     display: flex;
     flex-direction: column;
@@ -475,10 +475,10 @@ roomDiv {
   }
 
   #centerZone{
-    width: 30vh;
-    min-width: 30vh;
-    max-width: 30vh;
-    height: 80vw;
+    width: 20%;
+    height: 100%;
+    min-width: 20%;
+    max-width: 20%;
     /* position: relative; */
   }
 
@@ -490,8 +490,8 @@ roomDiv {
 
   #enemyZone {
     background-color: #404959;
-    width: 30vh;
-    height: 80vw;
+    width: 20%;
+    height: 100%;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -510,6 +510,7 @@ roomDiv {
   .alignListBottom {
     position: absolute;
     bottom: 0;
+    width: 100%;
   }
 
   .permaHidden {
@@ -528,8 +529,10 @@ roomDiv {
 
   .commandButton{
     width: 100%;
-    height: 50px;
+    height: 2em;
     border-radius: 2px;
+    padding: 0;
+    margin: 0;
   }
 
   .commandButton:hover{
@@ -540,6 +543,7 @@ roomDiv {
     /* display: none; */
     width: 100%;
     height: 50px;
+    background-color: white;
   }
 
   .combatButton:hover {
@@ -550,11 +554,12 @@ roomDiv {
     background-color: #e5c990;
     border: 2px solid #5e5542;
     border-radius: 2px;
-    height: 5vw;
-    width: 200px;
-    font-size: 11px;
+    height: 3em;
+    width: 100%;
+    font-size: 0.1em;
     box-sizing: border-box;
     margin: 0;
+    padding: 0;
   }
 
   .marginOnePx {
@@ -602,9 +607,10 @@ roomDiv {
     text-align: center;
   }
 
+
   #combatBox {
     background-color: #e5c990;
-  	height: 100%;
+  	height: 85%;
   	width: 100%;
   	border-radius: 2px;
   	margin: 0;
@@ -613,25 +619,20 @@ roomDiv {
     position: relative;
     display: flex;
     flex-flow: row;
-
-
-
   }
 
   #combatLogDiv {
-    /* #e5c990 */
-    background-color: green;
-    /* #5e5542 */
-    border: 3px solid blue;
-    width: 1000px;
-    height: 100px;
-
+    background-color: #e5c990;
+    border: 3px solid #5e5542;
+    height: 45%;
+  	width: 100%;
     position: absolute;
-    top: 80vh;
-    left: 0;
-    /* transform: translate(50%, 0%;); */
+    bottom: -47%;
+    left: -3px;
+    transform: translate(50%, 0%;);
     font-size: 11px;
   }
+
 
   .pcStatBlock {
     width: 100%;
@@ -698,16 +699,6 @@ roomDiv {
   }
 
   #combatOverlay {
-
-    transform: rotate(-90deg);
-    transform-origin: left top;
-    width: 200vh;
-    overflow-x: hidden;
-    position: absolute;
-    top: 100%;
-    left: 0;
-
-
     background-color: rgba(80,0,0,0.6);
     position: fixed;
     /* width: 100%; */
