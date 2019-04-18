@@ -419,6 +419,7 @@ $(()=>{ //Start jQuery
         this.encounterChance = 0 - Math.trunc(10 - (this.encounterChance)/10);
         //console.log("BATTLETIME");
         $("#combatOverlay").show();
+        $("#mapZone").hide();
       } else {
         this.encounterChance += 2;
       }

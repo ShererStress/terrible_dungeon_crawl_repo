@@ -149,6 +149,37 @@ div {
 
 }
 
+#levelingMenu {
+
+}
+
+.LevelingDiv {
+  width: 95%;
+  height: 20%;
+  display: flex;
+  flex-flow: row;
+  justify-content: space-around;
+  background-color: #404959;
+  border: 2px solid #5e5542;
+  border-radius: 2px;
+  margin: 1em auto;
+}
+
+.statDiv {
+  height: 100%;
+  width: 14.28%;
+  border: 1px solid #5e5542;
+  border-radius: 1px;
+  box-sizing: border-box;
+  text-align: center;
+  font-size: 1em;
+  background-color: white;
+}
+
+.statDiv:hover {
+  background-color: rgba(100, 100, 100, .6);;
+}
+
 .menuBoxCol {
   display: flex;
   flex-flow: column;
@@ -171,10 +202,10 @@ div {
 
 .centerTextbox{
   background-color: #e5c990;
-	height: 350px;
-	width: 550px;
+	height: 80vh;
+	width: 80vw;
 	border-radius: 3px;
-	margin: 150px auto;
+	margin: 5em auto;
   border: 3px solid white;
   text-align: center;
 }
@@ -202,9 +233,9 @@ div {
 	height: 80vh;
 	width: 100vw;
 	border-radius: 2px;
-  /* box-sizing: border-box; */
+  box-sizing: border-box;
 	margin: 0;
-  border: 3px solid #5e5542;
+  /* border: 2px solid #5e5542; */
   text-align: center;
   position: relative;
   display: flex;
@@ -218,7 +249,7 @@ div {
 	width: 100vw;
   position: absolute;
   bottom: -20vh;
-  left: -3px;
+  /* left: -3px; */
   transform: translate(50%, 0%;);
   font-size: 11px;
   box-sizing: border-box;
@@ -227,6 +258,7 @@ div {
 .pcStatBlock {
   width: 100%;
   height: 33.3%;
+  max-height: 200px;
   background-color: #e5c990;
   border: 2px solid #5e5542;
   box-sizing: border-box;
@@ -307,6 +339,15 @@ modal {
 
 .menuButtons:hover{
   background: rgba(100, 100, 100, .6);
+}
+
+.menuButtonsGold{
+  background-color: #f9de57;
+  border-radius: 2px;
+}
+
+.menuButtonsGold:hover{
+  background-color: #ccb547;
 }
 
 h3 {

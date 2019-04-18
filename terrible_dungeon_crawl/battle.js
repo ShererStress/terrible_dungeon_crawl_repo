@@ -371,7 +371,7 @@ class Adventurer extends Creature {
     this.currentLevel = 0;
     this.currentExp = 0;
     this.nextLevelExp = 5;
-    this.unusedSkillPoints = 0;
+    this.unusedSkillPoints = 15;
 
     //these are all used when leveling up.
     this.woundScaling = classData.woundScaling; //max wounds go up by this much each level
@@ -655,6 +655,10 @@ class Adventurer extends Creature {
   //Used to increase the stats of the character once exp tops off
   gainALevel() {
     this.currentLevel++;
+    if(this.currentLevel%1 === 0) {
+      this.unusedSkillPoints++; //Gain a skillpoint every 4 levels
+      $("#levelUpButton").addClass("menuButtonsGold");
+    }
     this.alterMaxWounds(this.woundScaling);
     if(this.currentLevel % this.damageScaling === 0) {
       this.alterDamage(1);
@@ -683,32 +687,44 @@ class Adventurer extends Creature {
     if(this.aliveBool) {
       this.restoreWounds(valueIn); //Also changes current vigor+wounds by the same amount... if they are alive.
     }
+    $(`#statLevelerTitle${this.name}`).text(`${this.name} - ${this.unusedSkillPoints}`);
+    $(`#woundUpgradeBlock${this.name}`).children().eq(1).text(`${this.maxWounds} -> ${this.maxWounds+12}`);
     this.attachedPlayerGroup.updateMapHealthBlocks();
     this.currentBattlefield.updateHealthValues();
   };
   alterDamage(valueIn) {
     this.damage += valueIn;
+    $(`#statLevelerTitle${this.name}`).text(`${this.name} - ${this.unusedSkillPoints}`);
+    $(`#attackUpgradeBlock${this.name}`).children().eq(1).text(`${this.damage} -> ${this.damage+2}`);
     this.currentBattlefield.updateAttackArmorThreatValues();
   };
   alterMagic(valueIn) {
     this.magic += valueIn;
+    $(`#statLevelerTitle${this.name}`).text(`${this.name} - ${this.unusedSkillPoints}`);
+    $(`#magicUpgradeBlock${this.name}`).children().eq(1).text(`${this.magic} -> ${this.magic+2}`);
     this.currentBattlefield.updateAttackArmorThreatValues();
   };
   alterArmor(valueIn) {
     this.armor += valueIn;
+    $(`#statLevelerTitle${this.name}`).text(`${this.name} - ${this.unusedSkillPoints}`);
+    $(`#armorUpgradeBlock${this.name}`).children().eq(1).text(`${this.armor} -> ${this.armor+2}`);
     this.currentBattlefield.updateAttackArmorThreatValues();
   };
   alterThreatThreshold(valueIn) {
     this.threatThreshold += valueIn;
+    $(`#statLevelerTitle${this.name}`).text(`${this.name} - ${this.unusedSkillPoints}`);
+    $(`#threatUpgradeBlock${this.name}`).children().eq(1).text(`${this.threatThreshold} -> ${this.threatThreshold+1}`);
     this.currentBattlefield.updateAttackArmorThreatValues();
   };
   alterPerception(valueIn) {
     this.perception += valueIn;
-    this.currentBattlefield.updateAttackArmorThreatValues();
+    $(`#statLevelerTitle${this.name}`).text(`${this.name} - ${this.unusedSkillPoints}`);
+    $(`#perceptionUpgradeBlock${this.name}`).children().eq(1).text(`${this.perception} -> ${this.perception+4}`);
   };
   alterInitiative(valueIn) {
     this.initiative += valueIn;
-    this.currentBattlefield.updateAttackArmorThreatValues();
+    $(`#statLevelerTitle${this.name}`).text(`${this.name} - ${this.unusedSkillPoints}`);
+    $(`#initiativeUpgradeBlock${this.name}`).children().eq(1).text(`${this.initiative} -> ${this.initiative+4}`);
   };
 
 
@@ -1254,6 +1270,7 @@ class Battlefield {
 
       $("#initativeOrderList").empty();
       //hide combat overlay
+      $("#mapZone").show();
       $("#combatOverlay").hide();
 
 
@@ -1305,18 +1322,6 @@ class Battlefield {
     $drawArea.empty();
     let numberPCs = this.playerCharacterList.length;
     let numberEnemies = this.enemyList.length;
-
-    //All in pixels. I made this for a computer monitor, and they make the math go 'round
-    /*
-    let yOneStart = Math.round(400-100*numberPCs);
-    let yTwoStart = Math.round(375-75*numberEnemies);
-    let pcStatBlockHeight = 200;
-    let enemyStatBlockheight = 150;
-    let drawAreaWidth = 300;
-    */
-
-
-
 
     let drawAreaWidth = $(window).width()*0.3; //The draw area is 30% of total width
     let pcStatBlockHeight = $(window).height()*0.33*0.8; //One third of 80%
@@ -1381,12 +1386,83 @@ class PlayerGroup {
     if(this.commLink !== undefined) {
       this.commLink.commAddToLinkedAdventurerList(characterIn);
     }
-    this.updateMapHealthBlocks()
+    this.updateMapHealthBlocks();
+    this.addLevelingBlock(characterIn);
   };
+
+  addLevelingBlock(charIn) {
+    let thePlayerGroup = this;
+    let $levelingMenu = $("#levelingMenu");
+    let $newBlock = $("<div>").addClass("LevelingDiv");
+
+    let $woundStat = $("<div>").addClass("statDiv").attr("id",`woundUpgradeBlock${charIn.name}`);
+    $woundStat.append($("<h4>").text("Max Vigor"));
+    $woundStat.append($("<h4>").text(`${charIn.maxWounds} -> ${charIn.maxWounds+12}`));
+    $woundStat.on("click", function () {
+      thePlayerGroup.increaseHealth(charIn);
+    });
+
+    let $damageStat = $("<div>").addClass("statDiv").attr("id",`attackUpgradeBlock${charIn.name}`);
+    $damageStat.append($("<h4>").text("Attack"));
+    $damageStat.append($("<h4>").text(`${charIn.damage} -> ${charIn.damage+2}`));
+    $damageStat.on("click", function () {
+      thePlayerGroup.increaseDamage(charIn);
+    });
+
+    let $magicStat = $("<div>").addClass("statDiv").attr("id",`magicUpgradeBlock${charIn.name}`);
+    $magicStat.append($("<h4>").text("Magic"));
+    $magicStat.append($("<h4>").text(`${charIn.magic} -> ${charIn.magic+2}`));
+    $magicStat.on("click", function () {
+      thePlayerGroup.increaseMagic(charIn);
+    });
+
+    let $armorStat = $("<div>").addClass("statDiv").attr("id",`armorUpgradeBlock${charIn.name}`);
+    $armorStat.append($("<h4>").text("Armor"));
+    $armorStat.append($("<h4>").text(`${charIn.armor} -> ${charIn.armor+2}`));
+    $armorStat.on("click", function () {
+      thePlayerGroup.increaseArmor(charIn);
+    });
+
+    let $threatStat = $("<div>").addClass("statDiv").attr("id",`threatUpgradeBlock${charIn.name}`);
+    $threatStat.append($("<h4>").text("Max Threat"));
+    $threatStat.append($("<h4>").text(`${charIn.threatThreshold} -> ${charIn.threatThreshold+1}`));
+    $threatStat.on("click", function () {
+      thePlayerGroup.increaseThreatThreshold(charIn);
+    });
+
+    let $perceptionStat = $("<div>").addClass("statDiv").attr("id",`perceptionUpgradeBlock${charIn.name}`);
+    $perceptionStat.append($("<h4>").text("Percep \n -tion"));
+    $perceptionStat.append($("<h4>").text(`${charIn.perception} -> ${charIn.perception+4}`));
+    $perceptionStat.on("click", function () {
+      thePlayerGroup.increasePerception(charIn);
+    });
+
+    let $initiativeStat = $("<div>").addClass("statDiv").attr("id",`initiativeUpgradeBlock${charIn.name}`);
+    $initiativeStat.append($("<h4>").text("Initia \n -tive"));
+    $initiativeStat.append($("<h4>").text(`${charIn.initiative} -> ${charIn.initiative+4}`));
+    $initiativeStat.on("click", function () {
+      thePlayerGroup.increaseInitiative(charIn);
+    });
+
+    $newBlock.append($woundStat);
+    $newBlock.append($damageStat);
+    $newBlock.append($magicStat);
+    $newBlock.append($armorStat);
+    $newBlock.append($threatStat);
+    $newBlock.append($perceptionStat);
+    $newBlock.append($initiativeStat);
+
+    let $upgraderTitle = $("<h3>").text(`${charIn.name} - ${charIn.unusedSkillPoints}`);
+    $upgraderTitle.attr("id",`statLevelerTitle${charIn.name}`)
+    $levelingMenu.append($upgraderTitle);
+    $levelingMenu.append($newBlock);
+  };
+
+
 
   returnPCs() {
     return this.playerList;
-  }
+  };
 
   updateMapHealthBlocks() {
     let $mapHealthBox = $("#menuHolder");
@@ -1420,30 +1496,89 @@ class PlayerGroup {
   //  -> do things (change values, alter buttons)
 
   //Used in increase a character's maximum stats. Called only in the map screen.
-  increaseHealth(adventurerId) {
+  increaseHealth(adventurerIn) {
+    let amount = 12;
+    if(adventurerIn.unusedSkillPoints >= 1) {
+      adventurerIn.unusedSkillPoints--;
+      adventurerIn.alterMaxWounds(amount);
+      this.updateMapHealthBlocks();
+      this.connectedBattlefield.updateHealthValues();
+      console.log(`${adventurerIn.name}'s wound tolerance was increased!`);
+    } else {
+      console.log("Need more skill Points!");
+    }
+  };
+
+  increaseDamage(adventurerIn) {
     let amount = 2;
-    this.playerList[adventurerId].alterMaxWounds(amount);
-    this.updateMapHealthBlocks();
-    this.connectedBattlefield.updateHealthValues();
-    console.log(`${this.playerList[adventurerId].name}'s wound tolerance was increased!`);
+    if(adventurerIn.unusedSkillPoints >= 1) {
+      adventurerIn.unusedSkillPoints--;
+      console.log(adventurerIn.damage);
+      adventurerIn.alterDamage(amount);
+      console.log(adventurerIn.damage);
+      this.connectedBattlefield.updateAttackArmorThreatValues();
+      console.log(`${adventurerIn.name}'s weapon damage was increased!`);
+    } else {
+      console.log("Need more skill Points!");
+    }
   };
-  increaseDamage(adventurerId) {
-    let amount = 1;
-    this.playerList[adventurerId].alterDamage(amount);
-    this.connectedBattlefield.updateAttackArmorThreatValues();
-    console.log(`${this.playerList[adventurerId].name}'s weapon damage was increased!`);
+
+  increaseMagic(adventurerIn) {
+    let amount = 2;
+    if(adventurerIn.unusedSkillPoints >= 1) {
+      adventurerIn.unusedSkillPoints--;
+      adventurerIn.alterMagic(amount);
+      this.connectedBattlefield.updateAttackArmorThreatValues();
+      console.log(`${adventurerIn.name}'s spellcasting ability was increased!`);
+    } else {
+      console.log("Need more skill Points!");
+    }
   };
-  increaseMagic(adventurerId) {
-    let amount = 1;
-    this.playerList[adventurerId].alterMagic(amount);
-    this.connectedBattlefield.updateAttackArmorThreatValues();
-    console.log(`${this.playerList[adventurerId].name}'s spellcasting ability was increased!`);
+
+  increaseArmor(adventurerIn) {
+    let amount = 2;
+    if(adventurerIn.unusedSkillPoints >= 1) {
+      adventurerIn.unusedSkillPoints--;
+      adventurerIn.alterArmor(amount);
+      this.connectedBattlefield.updateAttackArmorThreatValues();
+      console.log(`${adventurerIn.name}'s armor was improved!`);
+    } else {
+      console.log("Need more skill Points!");
+    }
   };
-  increaseArmor(adventurerId) {
+
+  increaseThreatThreshold(adventurerIn) {
     let amount = 1;
-    this.playerList[adventurerId].alterArmor(amount);
-    this.connectedBattlefield.updateAttackArmorThreatValues();
-    console.log(`${this.playerList[adventurerId].name}'s armor quality was increased!`);
+    if(adventurerIn.unusedSkillPoints >= 1) {
+      adventurerIn.unusedSkillPoints--;
+      adventurerIn.alterThreatThreshold(amount);
+      this.connectedBattlefield.updateAttackArmorThreatValues();
+      console.log(`${adventurerIn.name}'s combat expertise improved!`);
+    } else {
+      console.log("Need more skill Points!");
+    }
+  };
+
+  increasePerception(adventurerIn) {
+    let amount = 4;
+    if(adventurerIn.unusedSkillPoints >= 1) {
+      adventurerIn.unusedSkillPoints--;
+      adventurerIn.alterPerception(amount);
+      console.log(`${adventurerIn.name}'s perception improved!`);
+    } else {
+      console.log("Need more skill Points!");
+    }
+  };
+
+  increaseInitiative(adventurerIn) {
+    let amount = 4;
+    if(adventurerIn.unusedSkillPoints >= 1) {
+      adventurerIn.unusedSkillPoints--;
+      adventurerIn.alterInitiative(amount);
+      console.log(`${adventurerIn.name}'s initiative improved!`);
+    } else {
+      console.log("Need more skill Points!");
+    }
   };
 
 } //End PlayerGroup class
@@ -1510,6 +1645,7 @@ function clearCombatLog() {
 
 //Used to show and hide the level up modal
 function showLevelUp() {
+  $("#levelUpButton").removeClass("menuButtonsGold");
   let $levelUpBoxElements = $(".levelUpBox");
   $levelUpBoxElements.css("display", "block");
 };
@@ -1536,10 +1672,11 @@ let quake = new ForceOfNature();
 
 let garzmok = new Adventurer("Garzmok", "a greatsword", 0); //Gladiator
 let runa = new Adventurer("Runa", "unarmed strikes", 1); //Theurge
-let gilthorn = new Adventurer("Gilthorn", "a rapier", 2);
+let gilthorn = new Adventurer("Gilthorn", "a rapier", 2); //Duelist
 
 garzmok.connectToAPI(quake);
 runa.connectToAPI(quake);
+gilthorn.connectToAPI(quake);
 
 let partyOne = new PlayerGroup();
 partyOne.addPC(garzmok);
@@ -1560,16 +1697,8 @@ if(screen.width <= 600) {
 
 //Move these inside the PlayerGroup Class; create them (and surrounding HTML) as party members are added!
 $("#increaseHealth0").on("click", function() {partyOne.addPC(gilthorn); });
-$("#increaseHealth1").on("click", function() {partyOne.addPC(runa);; });
+$("#increaseHealth1").on("click", function() {partyOne.addPC(runa); });
 
-$("#increaseDamage0").on("click", function() {partyOne.increaseDamage(0); });
-$("#increaseDamage1").on("click", function() {partyOne.increaseDamage(1); });
-
-$("#increaseMagic0").on("click", function() {partyOne.increaseMagic(0); });
-$("#increaseMagic1").on("click", function() {partyOne.increaseMagic(1); });
-
-$("#increaseArmor0").on("click", function() {partyOne.increaseArmor(0); });
-$("#increaseArmor1").on("click", function() {partyOne.increaseArmor(1); });
 
 
 
