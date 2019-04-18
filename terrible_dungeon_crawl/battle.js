@@ -370,8 +370,8 @@ class Adventurer extends Creature {
     //Used to improve the character over bouts of combat
     this.currentLevel = 0;
     this.currentExp = 0;
-    this.nextLevelExp = 5;
-    this.unusedSkillPoints = 15;
+    this.nextLevelExp = 10;
+    this.unusedSkillPoints = 0;
 
     //these are all used when leveling up.
     this.woundScaling = classData.woundScaling; //max wounds go up by this much each level
@@ -638,16 +638,10 @@ class Adventurer extends Creature {
 
   //Called at the end of each combat, possibly leveling the creature
   checkForLevelGain() {
-
-
     if(this.currentExp >= this.nextLevelExp) {
       this.currentExp -= this.nextLevelExp;
       this.nextLevelExp = Math.floor(this.nextLevelExp*1.5);
-      console.log(`New level at ${this.nextLevelExp} exp`);
-      console.log("LEVELED");
       this.gainALevel()
-    } else {
-      console.log(`no level, exp: ${this.currentExp}`);
     }
 
   };
@@ -655,30 +649,43 @@ class Adventurer extends Creature {
   //Used to increase the stats of the character once exp tops off
   gainALevel() {
     this.currentLevel++;
-    if(this.currentLevel%1 === 0) {
+    addToCombatLog(`${this.name} advanced to level ${this.currentLevel}!`);
+    let levelingMessage = "";
+    if(this.currentLevel%4 === 0) {
       this.unusedSkillPoints++; //Gain a skillpoint every 4 levels
       $("#levelUpButton").addClass("menuButtonsGold");
+      levelingMessage += "Skill Point gained! ";
     }
     this.alterMaxWounds(this.woundScaling);
+    levelingMessage += `+${this.woundScaling} Vigor`;
     if(this.currentLevel % this.damageScaling === 0) {
       this.alterDamage(1);
+      levelingMessage += `, +1 Attack`;
     }
     if(this.currentLevel % this.magicScaling === 0) {
       this.alterMagic(1);
+      levelingMessage += `, +1 Magic`;
     }
     if(this.currentLevel % this.armorScaling === 0) {
       this.alterArmor(1);
+      levelingMessage += `, +1 Armor`;
     }
     if(this.currentLevel % this.threatThresholdScaling === 0) {
       this.alterThreatThreshold(1);
+      levelingMessage += `, +1 Max Threat`;
     }
     if(this.currentLevel % this.perceptionScaling === 0) {
       this.alterPerception(1);
+      levelingMessage += `, +1 Perception`;
     }
     if(this.currentLevel % this.initiativeScaling === 0) {
       this.alterInitiative(1);
+      levelingMessage += `, +1 Initiative`;
     }
-    console.log(`${this.name} leveling complete! Hit level ${this.currentLevel}!`);
+    addToCombatLog(levelingMessage);
+    if (this.attachedPlayerGroup.commLink.addCharTwoBool === false) {
+      this.attachedPlayerGroup.commLink.addCharTwoBool = true;
+    }
   };
 
   //Methods for changing the value of stats.
@@ -687,43 +694,43 @@ class Adventurer extends Creature {
     if(this.aliveBool) {
       this.restoreWounds(valueIn); //Also changes current vigor+wounds by the same amount... if they are alive.
     }
-    $(`#statLevelerTitle${this.name}`).text(`${this.name} - ${this.unusedSkillPoints}`);
+    $(`#statLevelerTitle${this.name}`).text(`${this.name}, Level ${this.currentLevel} ${this.className} - ${this.unusedSkillPoints} Skill Points to Spend`);
     $(`#woundUpgradeBlock${this.name}`).children().eq(1).text(`${this.maxWounds} -> ${this.maxWounds+12}`);
     this.attachedPlayerGroup.updateMapHealthBlocks();
     this.currentBattlefield.updateHealthValues();
   };
   alterDamage(valueIn) {
     this.damage += valueIn;
-    $(`#statLevelerTitle${this.name}`).text(`${this.name} - ${this.unusedSkillPoints}`);
+    $(`#statLevelerTitle${this.name}`).text(`${this.name}, Level ${this.currentLevel} ${this.className} - ${this.unusedSkillPoints} Skill Points to Spend`);
     $(`#attackUpgradeBlock${this.name}`).children().eq(1).text(`${this.damage} -> ${this.damage+2}`);
     this.currentBattlefield.updateAttackArmorThreatValues();
   };
   alterMagic(valueIn) {
     this.magic += valueIn;
-    $(`#statLevelerTitle${this.name}`).text(`${this.name} - ${this.unusedSkillPoints}`);
+    $(`#statLevelerTitle${this.name}`).text(`${this.name}, Level ${this.currentLevel} ${this.className} - ${this.unusedSkillPoints} Skill Points to Spend`);
     $(`#magicUpgradeBlock${this.name}`).children().eq(1).text(`${this.magic} -> ${this.magic+2}`);
     this.currentBattlefield.updateAttackArmorThreatValues();
   };
   alterArmor(valueIn) {
     this.armor += valueIn;
-    $(`#statLevelerTitle${this.name}`).text(`${this.name} - ${this.unusedSkillPoints}`);
+    $(`#statLevelerTitle${this.name}`).text(`${this.name}, Level ${this.currentLevel} ${this.className} - ${this.unusedSkillPoints} Skill Points to Spend`);
     $(`#armorUpgradeBlock${this.name}`).children().eq(1).text(`${this.armor} -> ${this.armor+2}`);
     this.currentBattlefield.updateAttackArmorThreatValues();
   };
   alterThreatThreshold(valueIn) {
     this.threatThreshold += valueIn;
-    $(`#statLevelerTitle${this.name}`).text(`${this.name} - ${this.unusedSkillPoints}`);
+    $(`#statLevelerTitle${this.name}`).text(`${this.name}, Level ${this.currentLevel} ${this.className} - ${this.unusedSkillPoints} Skill Points to Spend`);
     $(`#threatUpgradeBlock${this.name}`).children().eq(1).text(`${this.threatThreshold} -> ${this.threatThreshold+1}`);
     this.currentBattlefield.updateAttackArmorThreatValues();
   };
   alterPerception(valueIn) {
     this.perception += valueIn;
-    $(`#statLevelerTitle${this.name}`).text(`${this.name} - ${this.unusedSkillPoints}`);
+    $(`#statLevelerTitle${this.name}`).text(`${this.name}, Level ${this.currentLevel} ${this.className} - ${this.unusedSkillPoints} Skill Points to Spend`);
     $(`#perceptionUpgradeBlock${this.name}`).children().eq(1).text(`${this.perception} -> ${this.perception+4}`);
   };
   alterInitiative(valueIn) {
     this.initiative += valueIn;
-    $(`#statLevelerTitle${this.name}`).text(`${this.name} - ${this.unusedSkillPoints}`);
+    $(`#statLevelerTitle${this.name}`).text(`${this.name}, Level ${this.currentLevel} ${this.className} - ${this.unusedSkillPoints} Skill Points to Spend`);
     $(`#initiativeUpgradeBlock${this.name}`).children().eq(1).text(`${this.initiative} -> ${this.initiative+4}`);
   };
 
@@ -1329,8 +1336,6 @@ class Battlefield {
     let yOneStart = Math.round($(window).height()*0.8*(2/3-numberPCs/6));
     let yTwoStart = Math.round($(window).height()*0.8*(5/8-numberEnemies/8));
 
-    console.log(drawAreaWidth);
-
     $("#svgBox").attr("width",`${drawAreaWidth}`);
     $("#svgBox").attr("height",`${$(window).innerHeight()*0.8}`);
 
@@ -1452,7 +1457,7 @@ class PlayerGroup {
     $newBlock.append($perceptionStat);
     $newBlock.append($initiativeStat);
 
-    let $upgraderTitle = $("<h3>").text(`${charIn.name} - ${charIn.unusedSkillPoints}`);
+    let $upgraderTitle = $("<h3>").text(`${charIn.name}, Level ${charIn.currentLevel} ${charIn.className} - ${charIn.unusedSkillPoints} Skill Points to Spend`);
     $upgraderTitle.attr("id",`statLevelerTitle${charIn.name}`)
     $levelingMenu.append($upgraderTitle);
     $levelingMenu.append($newBlock);
@@ -1669,19 +1674,21 @@ function hideLevelUp() {
 //Run 'Stuff'
 
 let quake = new ForceOfNature();
+mbComms.commLinkToForceOfNature(quake);
 
 let garzmok = new Adventurer("Garzmok", "a greatsword", 0); //Gladiator
 let runa = new Adventurer("Runa", "unarmed strikes", 1); //Theurge
 let gilthorn = new Adventurer("Gilthorn", "a rapier", 2); //Duelist
 
+mbComms.standByOne(runa);
+mbComms.standByTwo(gilthorn);
+
 garzmok.connectToAPI(quake);
-runa.connectToAPI(quake);
-gilthorn.connectToAPI(quake);
+//runa.connectToAPI(quake);
+//gilthorn.connectToAPI(quake);
 
 let partyOne = new PlayerGroup();
 partyOne.addPC(garzmok);
-//partyOne.addPC(runa);
-//partyOne.addPC(talathel);
 
 partyOne.updateMapHealthBlocks();
 mbComms.commLinkToPlayerGroup(partyOne);
@@ -1689,22 +1696,9 @@ mbComms.commLinkToPlayerGroup(partyOne);
 let fightOne = new Battlefield(partyOne);
 mbComms.commLinkToBattlefield(fightOne);
 
-
-
 if(screen.width <= 600) {
   alert("I see you are using a phone for this. \n\n\n Please reconsider, or get ready to flip that thing sideways a bunch.")
 }
-
-//Move these inside the PlayerGroup Class; create them (and surrounding HTML) as party members are added!
-$("#increaseHealth0").on("click", function() {partyOne.addPC(gilthorn); });
-$("#increaseHealth1").on("click", function() {partyOne.addPC(runa); });
-
-
-
-
-
-
-
 
 
 

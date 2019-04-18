@@ -25,6 +25,14 @@ class mapBattleCommunicator {
     this.linkedPlayerGroup;
 
     this.linkedGroupLocation;
+
+    this.addCharTwoBool = false;
+    this.addCharThreeBool = false;
+
+    this.standByCharOne;
+    this.standByChartwo;
+
+    this.linkedForceOfNature;
   }
 
   //Add a PC to the list
@@ -53,6 +61,10 @@ class mapBattleCommunicator {
     locationIn.commLink = this;
   };
 
+  commLinkToForceOfNature(usgsAPIin) {
+    this.linkedForceOfNature = usgsAPIin;
+  }
+
   //Recovers the wounds of a single adventurer. If the amount is = -1, it fully heals them.
   commRemoveWoundsSingleTarget(targetAdventurerIndex = 0, woundRecoveryAmount = 0) {
     let adventurerToHeal = this.linkedAdventurerList[targetAdventurerIndex];
@@ -68,6 +80,15 @@ class mapBattleCommunicator {
 
   //Loops over the entire list of linked adventurers, recovering that many wounds for each. Once again, a value of -1 recovers all wounds.
   commRemoveWoundsAllTargets(woundRecoveryAmount = 0) {
+    if(this.addCharTwoBool === true) {
+      this.addCharTwoBool = -1;
+      this.addCharTwo();
+    }
+    if(this.addCharThreeBool === true) {
+      this.addCharThreeBool = -1;
+      this.addCharThree();
+    }
+
     console.log("Healing everyone!");
     for (let i = 0; i < this.linkedAdventurerList.length; i++) {
       this.commRemoveWoundsSingleTarget(i,woundRecoveryAmount);
@@ -79,8 +100,27 @@ class mapBattleCommunicator {
     return (this.linkedGroupLocation.currentFloor.level);
   }
 
-} //End mapBattleCommunicator class
+  standByOne(charIn) {
+    this.standByCharOne = charIn;
+  }
 
+  standByTwo(charIn) {
+    this.standByCharTwo = charIn;
+  }
+
+  addCharTwo() {
+    this.linkedPlayerGroup.addPC(this.standByCharOne);
+    this.standByCharOne.connectToAPI(this.linkedForceOfNature);
+    this.linkedPlayerGroup.updateMapHealthBlocks();
+  };
+
+  addCharThree() {
+    this.linkedPlayerGroup.addPC(this.standByCharTwo);
+    this.standByCharTwo.connectToAPI(this.linkedForceOfNature);
+    this.linkedPlayerGroup.updateMapHealthBlocks();
+  }
+
+} //End mapBattleCommunicator class
 
 //Define this here? I need both scripts to be able to see it.
 const mbComms = new mapBattleCommunicator();
@@ -461,12 +501,18 @@ $(()=>{ //Start jQuery
         //Change the current room to explored
         this.currentFloor.mapData[this.rowLocation][this.colLocation][0] = 3;
 
+
+
         //Change critical variables for the group
         console.log(`Changing floor by ${directionIn}`);
         this.currentFloor = this.currentTower.floorList[this.currentFloorLevel+directionIn];
         this.currentFloorLevel  += directionIn;
         this.rowLocation = destinationRow;
         this.colLocation = destinationCol;
+
+        if(this.currentFloorLevel > 1 && this.commLink.addCharThreeBool === false) {
+          this.commLink.addCharThreeBool = true;
+        }
 
         //We are now at the other end of the stairs in the new floor
         this.currentFloor.mapData[this.rowLocation][this.colLocation][0] = 4;
