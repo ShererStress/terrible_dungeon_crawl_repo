@@ -1541,7 +1541,7 @@ $("#increaseArmor1").on("click", function() {partyOne.increaseArmor(1); });
 
 
 //Remove this once responsiveness is finished
-$("#combatOverlay").show();
+// $("#combatOverlay").show();
 
 
 
