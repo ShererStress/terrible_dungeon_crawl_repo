@@ -13,7 +13,12 @@
   <meta name="viewport" content="width=device-width">
 </head>
 <body>
-  <button id="helpButton" class="menuButtons"> Show Controls and Legend </button>
+  <mobileWindowFrame id="mobileFrame">
+    <div id="menuHolder" class="menuBoxRow">
+      <button id="helpButton" class="menuButtons"> Show Controls and Legend </button>
+      <button id="levelUpButton" class="menuButtons"> Adventurer LevelUp </button>
+
+    </div>
   <modal class="helpBox">
     <div class="helpBox centerTextbox">
       <h3> Click on areas to explore. You are located in the red area. </h3>
@@ -25,7 +30,7 @@
     </div>
   </modal>
 
-  <button id="levelUpButton" class="menuButtons"> Adventurer LevelUp </button>
+
   <modal class="levelUpBox">
     <div class="levelUpBox centerTextbox">
       <h3> BEHOLD - a menu for leveling up adventurers! </h3>
@@ -48,12 +53,10 @@
     </div>
   </modal>
 
-  <div id="mapHealthBarZone"></div>
-  SHOW THE FLOOR LEVEL
-  ALSO MAKE A TEXTBOX
-  <mobileDeviceStupidityOverflowCompensator id"AAA">
+
+  <mapWrapper id="mapWrapper">
   <mapArea id="mapZone"></mapArea>
-  </mobileDeviceStupidityOverflowCompensator>
+  </mapWrapper>
   <modal id="combatOverlay">
     <div id="combatBox">
       <sectionCombat id="commandZone">
@@ -80,5 +83,6 @@
 
   <script src="terrible_dungeon_crawl/tdc.js"></script>
   <script src="terrible_dungeon_crawl/battle.js"></script>
+</mobileWindowFrame>
 </body>
 </html>

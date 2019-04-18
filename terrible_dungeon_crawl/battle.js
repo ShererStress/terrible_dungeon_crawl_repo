@@ -1354,13 +1354,16 @@ class PlayerGroup {
   }
 
   updateMapHealthBlocks() {
-    let $mapHealthBox = $("#mapHealthBarZone");
-    $mapHealthBox.empty();
+    let $mapHealthBox = $("#menuHolder");
+    //$mapHealthBox.empty();
+    $(".healthBox").remove();
 
-    for(let i = 0; i < this.playerList.length; i++) {
+    for(let i = this.playerList.length-1; i >= 0; i--) {
       let currentVigor = this.playerList[i].vigor;
       let currentWounds = this.playerList[i].wounds;
       let maxWounds = this.playerList[i].maxWounds;
+
+      let $newMapHealthBlock = $("<div>").addClass("healthBox").css("height","5em");
 
       let $healthContainer = $("<div>").addClass("healthContainer").css("margin", "auto");
       $healthContainer.css("width","60px").css("height","15px").css("margin","2px");
@@ -1370,9 +1373,10 @@ class PlayerGroup {
       $woundBar.css("width",`${100*currentWounds/maxWounds}%`);
       $healthContainer.append($woundBar);
       $woundBar.append($vigorBar);
-      $mapHealthBox.append($("<h2>").text(`${this.playerList[i].name}`).css("font-size","8px"))
-      $mapHealthBox.append($("<h2>").text(`${currentVigor}/${currentWounds}`).css("font-size","8px"))
-      $mapHealthBox.append($healthContainer);
+      $newMapHealthBlock.append($("<h2>").text(`${this.playerList[i].name}`).css("font-size","8px"))
+      $newMapHealthBlock.append($("<h2>").text(`${currentVigor}/${currentWounds}`).css("font-size","8px"))
+      $newMapHealthBlock.append($healthContainer)
+      $mapHealthBox.prepend($newMapHealthBlock);
     }
   };
 

@@ -148,7 +148,7 @@ $(()=>{ //Start jQuery
   //Down1 1.2
   //Down2 7.0
 
-
+//Max size of 15x15 - fits on tablet - only 2 sizes needed for responsiveness
 
 
   //////CLASSES
@@ -584,56 +584,51 @@ $(()=>{ //Start jQuery
           });
         }
       }//end loops
-      /*
+
+
+      //Prepare for sufferin- I mean responsiveness
       let totalScreenWidth = screen.width;
-      console.log(totalScreenWidth);
-      if(totalScreenWidth < 0) {
+
+      if(totalScreenWidth <= 600) { //IT'S A DAMN PHONE
+        let roomsWide = arrayIn[0].length;
+        let roomsTall = arrayIn.length;
+        let percentWide = 100/roomsWide;
+        let percentTall = 100/roomsTall;
+
+        let roomSize = 4;
+
+        let mapWidth = 4+(roomsWide)*roomSize;
+        let mapHeight = 4+(roomsTall)*roomSize;
+
+        let $mobileWindowFrame = $("#mobileFrame");
+        let $mapWrapper = $("#mapWrapper");
+        $mobileWindowFrame.css("width",`${mapWidth}em`);
+        $mobileWindowFrame.css("height",`${mapHeight}em`);
+        $mapWrapper.css("width",`${mapWidth}em`);
+        $mapWrapper.css("height",`${mapHeight}em`);
+
+        $map.css("height", `${100}%`);
+        $map.css("width",`${100}%`);
+
+        let $rooms = $(".roomButton")
+        $rooms.css("width", `${percentWide}%`);
+        $rooms.css("height", `${percentTall}%`);
+
+      } else { //Tablet/desktop yaaaayyyy
+
+        //Change these to rescale maps if it gets too big - remember to consider the effects of the borders (currently 4 px)!
+        let roomSize = 40;
+
+        $map.css("height", `${4+(arrayIn.length)*roomSize}px`);
+        $map.css("width",`${4+(arrayIn[0].length)*roomSize}px`);
+
+        let $rooms = $(".roomButton")
+        $rooms.css("width", `${roomSize}px`);
+        $rooms.css("height", `${roomSize}px`);
 
       }
 
-      //Change these to rescale maps if it gets too big - remember to consider the effects of the borders (currently 4 px)!
-      let roomSize = 40;
-      let mapWidth = 4+(arrayIn[0].length)*roomSize;
-      let mapHeight = 4+(arrayIn.length)*roomSize;
 
-      $map.css("height", `${mapHeight}px`);
-      $map.css("width",`${mapWidth}px`);
-
-      let $rooms = $(".roomButton")
-      $rooms.css("width", `${roomSize}px`);
-      $rooms.css("height", `${roomSize}px`);
-
-      //RESPONSIVENESS
-      $map.css("min-width", `${mapWidth}px`);
-      $map.css("min-height", `${mapHeight}px`);
-      $map.css("max-width", `${mapWidth}px`);
-      $map.css("max-height", `${mapHeight}px`);
-      */
-
-      let totalScreenWidth = screen.width;
-
-      let roomsWide = arrayIn[0].length;
-      let roomsTall = arrayIn.length;
-      let percentWide = 100/roomsWide;
-      let percentTall = 100/roomsTall;
-
-      console.log(totalScreenWidth);
-      if(totalScreenWidth < 0) {
-
-      }
-
-    
-      //Change these to rescale maps if it gets too big - remember to consider the effects of the borders (currently 4 px)!
-      let roomSize = 40;
-      let mapWidth = 4+(arrayIn[0].length)*roomSize;
-      let mapHeight = 4+(arrayIn.length)*roomSize;
-
-      $map.css("height", `${500}px`);
-      $map.css("width",`${600}px`);
-
-      let $rooms = $(".roomButton")
-      $rooms.css("width", `${percentWide}%`);
-      $rooms.css("height", `${percentTall}%`);
 
     };
 
