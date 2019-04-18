@@ -893,6 +893,8 @@ class Battlefield {
       numberOfFoes = 1;
     }
 
+    numberOfFoes = 4;
+
     if (Math.random() < challengeFoeChance) {
       numberOfFoes = 1;
       challengeFoeBool = true;
@@ -1297,11 +1299,22 @@ class Battlefield {
     let numberPCs = this.playerCharacterList.length;
     let numberEnemies = this.enemyList.length;
 
+    //All in pixels. I made this for a computer monitor, and they make the math go 'round
     let yOneStart = Math.round(400-100*numberPCs);
     let yTwoStart = Math.round(375-75*numberEnemies);
     let pcStatBlockHeight = 200;
     let enemyStatBlockheight = 150;
-    let drawAreaWidth = 300
+    let drawAreaWidth = 300;
+
+    //Still in pixels. The math works, though. And that's all that matters here.
+    if(screen.width <= 600) { //If the screen is too small ...accommodate
+      drawAreaWidth = screen.width*0.2; //The draw area is 20% of total width
+      pcStatBlockHeight = screen.height*0.33*0.85; //One third of 85%
+      enemyStatBlockheight = screen.height*0.25*0.85; //One fourth of 85%
+      yOneStart = Math.round(screen.height*0.85*(2/3-numberPCs/6));
+      yTwoStart = Math.round(screen.height*0.85*(5/8-numberEnemies/8));
+    }
+
     //Assuming default height of 600px, width of 300px
     for(let i = 0; i < this.playerCharacterList.length; i++) {
       let currentCharThreat = this.playerCharacterList[i].threatenedFoes;
@@ -1501,7 +1514,7 @@ let quake = new ForceOfNature();
 
 let garzmok = new Adventurer("Garzmok", "a greatsword", 0); //Gladiator
 let runa = new Adventurer("Runa", "unarmed strikes", 1); //Theurge
-//let talathel = new Adventurer("Gilthorn", "a rapier", 3);
+let talathel = new Adventurer("Gilthorn", "a rapier", 2);
 
 garzmok.connectToAPI(quake);
 runa.connectToAPI(quake);
@@ -1509,7 +1522,7 @@ runa.connectToAPI(quake);
 let partyOne = new PlayerGroup();
 partyOne.addPC(garzmok);
 partyOne.addPC(runa);
-//partyOne.addPC(talathel);
+partyOne.addPC(talathel);
 
 partyOne.updateMapHealthBlocks();
 mbComms.commLinkToPlayerGroup(partyOne);
