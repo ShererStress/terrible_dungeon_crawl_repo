@@ -1501,7 +1501,7 @@ let quake = new ForceOfNature();
 
 let garzmok = new Adventurer("Garzmok", "a greatsword", 0); //Gladiator
 let runa = new Adventurer("Runa", "unarmed strikes", 1); //Theurge
-//let talathel = new Adventurer("Talathel", "a rapier", 20, 8, 2, 1,2);
+//let talathel = new Adventurer("Gilthorn", "a rapier", 3);
 
 garzmok.connectToAPI(quake);
 runa.connectToAPI(quake);
@@ -1510,16 +1510,17 @@ let partyOne = new PlayerGroup();
 partyOne.addPC(garzmok);
 partyOne.addPC(runa);
 //partyOne.addPC(talathel);
+
 partyOne.updateMapHealthBlocks();
 mbComms.commLinkToPlayerGroup(partyOne);
 
 let fightOne = new Battlefield(partyOne);
 mbComms.commLinkToBattlefield(fightOne);
 
-//quake.getExternalData();
+
 
 if(screen.width <= 600) {
-  alert("I see you are using a phone for this. \n\n\n Please reconsider.")
+  //alert("I see you are using a phone for this. \n\n\n Please reconsider.")
 }
 
 //Move these inside the PlayerGroup Class; create them (and surrounding HTML) as party members are added!
@@ -1539,6 +1540,8 @@ $("#increaseArmor1").on("click", function() {partyOne.increaseArmor(1); });
 
 
 
+//Remove this once responsiveness is finished
+$("#combatOverlay").show();
 
 
 
