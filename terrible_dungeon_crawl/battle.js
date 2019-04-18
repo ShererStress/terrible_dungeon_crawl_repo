@@ -1533,7 +1533,7 @@ mbComms.commLinkToBattlefield(fightOne);
 
 
 if(screen.width <= 600) {
-  //alert("I see you are using a phone for this. \n\n\n Please reconsider.")
+  alert("I see you are using a phone for this. \n\n\n Please reconsider, or get ready to flip that thing sideways a bunch.")
 }
 
 //Move these inside the PlayerGroup Class; create them (and surrounding HTML) as party members are added!
@@ -1552,9 +1552,6 @@ $("#increaseArmor1").on("click", function() {partyOne.increaseArmor(1); });
 
 
 
-
-//Remove this once responsiveness is finished
-$("#combatOverlay").show();
 
 
 

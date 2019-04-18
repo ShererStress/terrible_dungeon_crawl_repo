@@ -413,8 +413,7 @@ $(()=>{ //Start jQuery
       this.changePosition(parseInt(this.currentDirections.shift()));
       //checks if the movement is complete - can probably put the 'goToCombat' trigger here to interrupt movement consistently
 
-      //if(Math.random()*100 < this.encounterChance) {
-      if(false) { //halted for responsiveness testing
+      if(Math.random()*100 < this.encounterChance) {
         this.currentDirections.length = 0;
         this.encounterChance = 0 - Math.trunc(10 - (this.encounterChance)/10);
         //console.log("BATTLETIME");
