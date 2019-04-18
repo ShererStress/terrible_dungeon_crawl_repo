@@ -877,8 +877,6 @@ class Battlefield {
   //Handles creates a group of foes to fight at the start of each encounter
   createEnemies() {
 
-
-
     //Get from the map screen! Use commlink
     let currentFloor = this.commLink.getFloorLevel();
     let challengeFoeChance = 0.2;
@@ -892,8 +890,6 @@ class Battlefield {
     } else if (this.playerCharacterList.length === 1) {
       numberOfFoes = 1;
     }
-
-    numberOfFoes = 4;
 
     if (Math.random() < challengeFoeChance) {
       numberOfFoes = 1;
@@ -1307,7 +1303,7 @@ class Battlefield {
     let drawAreaWidth = 300;
 
     //Still in pixels. The math works, though. And that's all that matters here.
-    if(screen.width <= 600) { //If the screen is too small ...accommodate
+    if(screen.width <= 1000) { //If the screen is too small ...accommodate
       drawAreaWidth = screen.width*0.2; //The draw area is 20% of total width
       pcStatBlockHeight = screen.height*0.33*0.85; //One third of 85%
       enemyStatBlockheight = screen.height*0.25*0.85; //One fourth of 85%
