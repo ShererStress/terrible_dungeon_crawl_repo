@@ -333,3 +333,388 @@ roomDiv {
   border: 2px solid black;
   font-size: 0px;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* Welcome to mobile hell */
+/* For mobile */
+@media only screen and (max-width: 600px) {
+  body {
+    /* transform: rotate(-90deg);
+    transform-origin: left top;
+    width: 100vh;
+     overflow-x: hidden;
+    position: absolute;
+    top: 100%;
+    left: 0; */
+    /* transform: rotate(90deg) translate(50%,0%); */
+    margin: 0;
+    padding: 0;
+    background-color: red;
+    position: relative;
+    font-family: 'Press Start 2P', cursive;
+    font-size: 12px;
+    overflow: scroll;
+  }
+
+  mobileDeviceStupidityOverflowCompensator {
+    position: relative;
+    width: 800px;
+    height: 800px;
+    max-width: 800px;
+    max-height: 800px;
+    min-width: 800px;
+    min-height: 800px;
+    overflow: scroll;
+    display: flex;
+  }
+
+  mapArea {
+
+  }
+
+  #mapZone {
+    width: 4px;
+    height: 4px;
+    background-color: black;
+    position: relative;
+    top: 0px;
+    left: 0px;
+    display: flex;
+    flex-wrap: wrap;
+    box-sizing: border-box;
+    border: 2px solid black;
+    overflow: scroll;
+    margin: auto;
+  }
+
+  button {
+    -webkit-appearance: button;
+    outline: none;
+    font-family: 'Press Start 2P', cursive;
+    font-size: 8px;
+    padding: 4px;
+  }
+
+  section {
+
+  }
+
+  sectionCombat {
+
+  }
+
+  #commandZone{
+    background-color: #404959;
+    width: 200px;
+    /* border-right: 3px solid #5e5542; */
+    position: relative;
+  }
+
+  #playerCharacterZone {
+    height: 100%;
+    width: 250px;
+    background-color: #404959;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  #centerZone{
+    width: 300px;
+    position: relative;
+  }
+
+  svg {
+    position: absolute;
+    top: 0;
+    left: 0;
+  }
+
+  #enemyZone {
+    background-color: #404959;
+    width: 250px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  #actionList{
+
+
+    width: 100%;
+  }
+
+  .alignListBottom {
+    position: absolute;
+    bottom: 0;
+  }
+
+  .permaHidden {
+    display: none;
+  }
+
+  #combatLog {
+    /* height: 100px; */
+    overflow: auto;
+  }
+
+  li {
+    width: 100%;
+    list-style: none;
+  }
+
+  .commandButton{
+    width: 100%;
+    height: 50px;
+    border-radius: 2px;
+  }
+
+  .commandButton:hover{
+    background: rgba(100, 100, 100, .6);
+  }
+
+  .combatButton {
+    /* display: none; */
+    width: 100%;
+    height: 50px;
+  }
+
+  .combatButton:hover {
+    background: rgba(100, 100, 100, .6);
+  }
+
+  .initOrderEntry {
+    background-color: #e5c990;
+    border: 2px solid #5e5542;
+    border-radius: 2px;
+    height: 40px;
+    width: 200px;
+    font-size: 11px;
+    box-sizing: border-box;
+    margin: 0;
+  }
+
+  .marginOnePx {
+    margin: 1px;
+    width: 100%;
+  }
+  div {
+
+  }
+
+  .helpBox {
+    display: none;
+  }
+
+  .levelUpBox {
+    display: none;
+  }
+
+  .centerTextbox{
+    background-color: #e5c990;
+  	height: 350px;
+  	width: 550px;
+  	border-radius: 3px;
+  	margin: 150px auto;
+    border: 3px solid white;
+    text-align: center;
+  }
+
+  #mapHealthBarZone {
+    position: absolute;
+    top: 75px;
+    left: 0px;
+    width: 71px;
+    background-color: #e5c990;
+    border: 2px solid #5e5542;
+    display: flex;
+    flex-flow: column;
+  }
+
+  #combatBox {
+    background-color: #e5c990;
+  	height: 600px;
+  	width: 1000px;
+  	border-radius: 2px;
+  	margin: 75px auto;
+    border: 3px solid #5e5542;
+    text-align: center;
+    position: relative;
+    display: flex;
+    flex-flow: row;
+  }
+
+  #combatLogDiv {
+    background-color: #e5c990;
+    border: 3px solid #5e5542;
+    width: 1000px;
+    height: 100px;
+    position: absolute;
+    bottom: -106px;
+    left: -3px;
+    transform: translate(50%, 0%;);
+    font-size: 11px;
+  }
+
+  .pcStatBlock {
+    width: 100%;
+    height: 200px;
+    background-color: #e5c990;
+    border: 2px solid #5e5542;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .enemyStatBlock {
+    width: 100%;
+    height: 150px;
+    background-color: #e5c990;
+    border: 2px solid #5e5542;
+    box-sizing: border-box;
+
+  }
+
+  .healthContainer {
+    background-color: black;
+    height: 20px;
+    width: 100px;
+    display: flex;
+    border-radius: 3px;
+    border: 1px solid #5e5542;
+  }
+
+  .deadCreature {
+    background-color: #4f2b2b;
+  }
+
+  .flexBoxRow {
+    display: flex;
+    flex-direction: row;
+  }
+
+  bar {
+
+  }
+
+  .woundBar {
+    background-color: #db3618;
+    height: 100%;
+    display: flex;
+  }
+
+  .vigorBar {
+    background-color: green;
+    height: 100%;
+  }
+
+
+  modal {
+    background-color: rgba(0,0,0,0.4);
+  	position: fixed;
+  	top: 0;
+  	left: 0;
+  	height: 100%;
+  	width: 100%;
+  	z-index: 1;
+  	overflow: auto;
+  }
+
+  #combatOverlay {
+    background-color: rgba(80,0,0,0.6);
+    z-index: 2;
+    display: none;
+  }
+
+
+  .menuButtons:hover{
+    background: rgba(100, 100, 100, .6);
+  }
+
+
+  /* Gameplay rendering elements for the map*/
+  /* Order here matters for rendering purposes - use caution when swapping these around! */
+  roomDiv {
+    width: 80px;
+    height: 80px;
+    background-color: black;
+    box-sizing: border-box;
+    border: 2px solid black;
+  }
+
+  .roomButton {
+    width: 80px;
+    height: 80px;
+    background-color: black;
+    box-sizing: border-box;
+    border: 2px solid black;
+    font-size: 12px;
+  }
+
+  .roomButton:hover {
+    /* background: rgba(180, 180, 180, .4); */
+    border: 6px dashed  #404959;
+  }
+
+  .topDoor {
+    border-top: 1px solid grey;
+  }
+
+  .rightDoor {
+    border-right: 1px solid grey;
+  }
+
+  .bottomDoor {
+    border-bottom: 1px solid grey;
+  }
+
+  .leftDoor {
+    border-left: 1px solid grey;
+  }
+
+  .explorable {
+    background-color: grey;
+    border: 10px solid black;
+    font-size: 12px;
+  }
+
+  .explored {
+    background-color: #e5c990;
+  }
+
+  .currentLoc {
+    background-color: red;
+  }
+  .hidden {
+    background-color: black;
+    border: 2px solid black;
+    font-size: 0px;
+  }
+} /*End mobile*/

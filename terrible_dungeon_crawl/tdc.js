@@ -412,7 +412,9 @@ $(()=>{ //Start jQuery
       //causes the group to move
       this.changePosition(parseInt(this.currentDirections.shift()));
       //checks if the movement is complete - can probably put the 'goToCombat' trigger here to interrupt movement consistently
-      if(Math.random()*100 < this.encounterChance) {
+
+      //if(Math.random()*100 < this.encounterChance) {
+      if(false) { //halted for responsiveness testing
         this.currentDirections.length = 0;
         this.encounterChance = 0 - Math.trunc(10 - (this.encounterChance)/10);
         //console.log("BATTLETIME");
@@ -582,16 +584,56 @@ $(()=>{ //Start jQuery
           });
         }
       }//end loops
+      /*
+      let totalScreenWidth = screen.width;
+      console.log(totalScreenWidth);
+      if(totalScreenWidth < 0) {
+
+      }
 
       //Change these to rescale maps if it gets too big - remember to consider the effects of the borders (currently 4 px)!
       let roomSize = 40;
+      let mapWidth = 4+(arrayIn[0].length)*roomSize;
+      let mapHeight = 4+(arrayIn.length)*roomSize;
 
-      $map.css("height", `${4+(arrayIn.length)*roomSize}px`);
-      $map.css("width",`${4+(arrayIn[0].length)*roomSize}px`);
+      $map.css("height", `${mapHeight}px`);
+      $map.css("width",`${mapWidth}px`);
 
       let $rooms = $(".roomButton")
       $rooms.css("width", `${roomSize}px`);
       $rooms.css("height", `${roomSize}px`);
+
+      //RESPONSIVENESS
+      $map.css("min-width", `${mapWidth}px`);
+      $map.css("min-height", `${mapHeight}px`);
+      $map.css("max-width", `${mapWidth}px`);
+      $map.css("max-height", `${mapHeight}px`);
+      */
+
+      let totalScreenWidth = screen.width;
+
+      let roomsWide = arrayIn[0].length;
+      let roomsTall = arrayIn.length;
+      let percentWide = 100/roomsWide;
+      let percentTall = 100/roomsTall;
+
+      console.log(totalScreenWidth);
+      if(totalScreenWidth < 0) {
+
+      }
+
+    
+      //Change these to rescale maps if it gets too big - remember to consider the effects of the borders (currently 4 px)!
+      let roomSize = 40;
+      let mapWidth = 4+(arrayIn[0].length)*roomSize;
+      let mapHeight = 4+(arrayIn.length)*roomSize;
+
+      $map.css("height", `${500}px`);
+      $map.css("width",`${600}px`);
+
+      let $rooms = $(".roomButton")
+      $rooms.css("width", `${percentWide}%`);
+      $rooms.css("height", `${percentTall}%`);
 
     };
 
