@@ -896,6 +896,7 @@ class Battlefield {
     } else if (currentFloor >= 1){
       numberOfFoes = Math.floor(Math.random()*2)+2;
     } else if (this.playerCharacterList.length === 1) {
+      challengeFoeChance = 0;
       numberOfFoes = 1;
     }
 
@@ -947,7 +948,7 @@ class Battlefield {
 
       let $newPCBlock = $("<div>").attr("id",`pc${i}Block`);
       $newPCBlock.addClass("pcStatBlock");
-      $newPCBlock.append($("<h4>").text(`${this.playerCharacterList[i].name}`).css("margin","1em"));
+      $newPCBlock.append($("<h4>").text(`${this.playerCharacterList[i].name}`));
       let $flexContainerHealth = $("<div>").addClass("flexBoxRow");
 
       let $healthContainer = $("<div>").addClass("healthContainer").css("margin", "auto");
@@ -1306,20 +1307,27 @@ class Battlefield {
     let numberEnemies = this.enemyList.length;
 
     //All in pixels. I made this for a computer monitor, and they make the math go 'round
+    /*
     let yOneStart = Math.round(400-100*numberPCs);
     let yTwoStart = Math.round(375-75*numberEnemies);
     let pcStatBlockHeight = 200;
     let enemyStatBlockheight = 150;
     let drawAreaWidth = 300;
+    */
 
-    //Still in pixels. The math works, though. And that's all that matters here.
-    if(screen.width <= 1000) { //If the screen is too small ...accommodate
-      drawAreaWidth = screen.width*0.2; //The draw area is 20% of total width
-      pcStatBlockHeight = screen.height*0.33*0.85; //One third of 85%
-      enemyStatBlockheight = screen.height*0.25*0.85; //One fourth of 85%
-      yOneStart = Math.round(screen.height*0.85*(2/3-numberPCs/6));
-      yTwoStart = Math.round(screen.height*0.85*(5/8-numberEnemies/8));
-    }
+
+
+
+    let drawAreaWidth = $(window).width()*0.3; //The draw area is 30% of total width
+    let pcStatBlockHeight = $(window).height()*0.33*0.8; //One third of 80%
+    let enemyStatBlockheight = $(window).height()*0.25*0.8; //One fourth of 80%
+    let yOneStart = Math.round($(window).height()*0.8*(2/3-numberPCs/6));
+    let yTwoStart = Math.round($(window).height()*0.8*(5/8-numberEnemies/8));
+
+    console.log(drawAreaWidth);
+
+    $("#svgBox").attr("width",`${drawAreaWidth}`);
+    $("#svgBox").attr("height",`${$(window).innerHeight()*0.8}`);
 
     //Assuming default height of 600px, width of 300px
     for(let i = 0; i < this.playerCharacterList.length; i++) {
