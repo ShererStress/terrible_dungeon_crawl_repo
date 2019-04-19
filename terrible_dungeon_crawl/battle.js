@@ -108,7 +108,7 @@ $(()=>{ //Start jQuery
       let damageTaken;
 
       if(ignoreArmorBool) {
-        damageTaken = incomingDamage;
+        damageTaken = Math.max(incomingDamage,1); //Always take 1 damage
       } else {
         damageTaken = Math.max(incomingDamage-effectiveArmor,1); //Always take 1 damage
       }
@@ -337,9 +337,9 @@ class Adventurer extends Creature {
   static returnAdventurerClass(classIndexIn) {
 
     let classDataArray = [
-      {className: "Gladiator", maxWounds: 20, damage: 9, magic: 4, armor: 1, threatThreshold: 2, perception: 3, initiative: 7, woundScaling:3, damageScaling:4, magicScaling: 5, armorScaling: 4, threatThresholdScaling: 7, perceptionScaling: 4, initiativeScaling: 3},
-      {className: "Theurge", maxWounds: 15, damage: 7, magic: 8, armor: 2, threatThreshold: 3, perception: 5, initiative: 3, woundScaling:2, damageScaling:5, magicScaling: 3, armorScaling: 3, threatThresholdScaling: 6, perceptionScaling: 3, initiativeScaling: 4},
-      {className: "Duelist", maxWounds: 16, damage: 11, magic: 6, armor: 2, threatThreshold: 1, perception: 8, initiative: 9, woundScaling:2, damageScaling:3, magicScaling: 4, armorScaling: 3, threatThresholdScaling: 8, perceptionScaling: 3, initiativeScaling: 3},
+      {className: "Gladiator", maxWounds: 20, damage: 9, magic: 4, armor: 1, threatThreshold: 2, perception: 3, initiative: 7, woundScaling:4, damageScaling:3, magicScaling: 5, armorScaling: 4, threatThresholdScaling: 6, perceptionScaling: 4, initiativeScaling: 3},
+      {className: "Theurge", maxWounds: 15, damage: 7, magic: 8, armor: 2, threatThreshold: 3, perception: 5, initiative: 3, woundScaling:2, damageScaling:4, magicScaling: 3, armorScaling: 3, threatThresholdScaling: 6, perceptionScaling: 2, initiativeScaling: 4},
+      {className: "Duelist", maxWounds: 16, damage: 12, magic: 6, armor: 2, threatThreshold: 1, perception: 8, initiative: 9, woundScaling:2, damageScaling:3, magicScaling: 4, armorScaling: 4, threatThresholdScaling: 8, perceptionScaling: 3, initiativeScaling: 2},
     ];
     return classDataArray[classIndexIn];
   };
@@ -370,7 +370,7 @@ class Adventurer extends Creature {
     //Used to improve the character over bouts of combat
     this.currentLevel = 0;
     this.currentExp = 0;
-    this.nextLevelExp = 10;
+    this.nextLevelExp = 8;
     this.unusedSkillPoints = 0;
 
     //these are all used when leveling up.
@@ -640,7 +640,7 @@ class Adventurer extends Creature {
   checkForLevelGain() {
     if(this.currentExp >= this.nextLevelExp) {
       this.currentExp -= this.nextLevelExp;
-      this.nextLevelExp = Math.floor(this.nextLevelExp*1.5);
+      this.nextLevelExp = Math.floor(this.nextLevelExp*1.4);
       this.gainALevel()
     }
 
@@ -766,17 +766,20 @@ class Enemy extends Creature {
       {name:"Shriveled Ghoul", weaponDescriptor: "its claws", vigor: 11, damage: 10, magic: 0, armor: 1, threatThreshold: 2, perception: 0, initiative: 4, exp: 3, special: "none", tactic: "rush"}, //0
       {name:"Rusted Sentinel", weaponDescriptor: "a dulled spear", vigor: 13, damage: 8, magic: 1, armor: 4, threatThreshold: 1, perception: 0, initiative: 0, exp: 3, special: "none", tactic: "rush"}, //1
       {name:"Warg", weaponDescriptor: "its toothy maw", vigor: 18, damage: 12, magic: 0, armor: 2, threatThreshold: 1, perception: 8, initiative: 6, exp: 4, special: "none", tactic: "threatenAll"},  //2
-      {name:"Failing Guardian", weaponDescriptor: "a broken axe", vigor: 17, damage: 9, magic: 1, armor: 5, threatThreshold: 3, perception: 0, initiative: 1, exp: 4, special: "none", tactic: "guard"}, //3
+      {name:"Failing Guardian", weaponDescriptor: "a broken axe", vigor: 16, damage: 10, magic: 1, armor: 5, threatThreshold: 3, perception: 0, initiative: 1, exp: 4, special: "none", tactic: "guard"}, //3
       {name:"Animated Skeleton", weaponDescriptor: "a rusted blade", vigor: 21, damage: 13, magic: 1, armor: 3, threatThreshold: 3, perception: 2, initiative: 3, exp: 4, special: "cleave", tactic: "threatenAll"}, //4
       {name:"Undead Adventurer", weaponDescriptor: "a longsword", vigor: 20, damage: 16, magic: 2, armor: 4, threatThreshold: 4, perception: 4, initiative: 6, exp: 5, special: "none", tactic: "focusDown"}, //5
-      {name:"Rabid Owlbear", weaponDescriptor: "its beak and claws", vigor: 34, damage: 16, magic: 0, armor: 3, threatThreshold: 3, perception: 4, initiative: 2, exp: 6, special: "cleave", tactic: "threatenAll"}, //6
-      {name:"Brass Sentinel", weaponDescriptor: "a spear", vigor: 28, damage: 18, magic: 3, armor: 6, threatThreshold: 2, perception: 4, initiative: 1, exp: 6, special: "none", tactic: "focusDown"}, //7
+      {name:"Rabid Owlbear", weaponDescriptor: "its beak and claws", vigor: 34, damage: 16, magic: 0, armor: 3, threatThreshold: 3, perception: 4, initiative: 2, exp: 9, special: "cleave", tactic: "threatenAll"}, //6
+      {name:"Brass Sentinel", weaponDescriptor: "a spear", vigor: 32, damage: 24, magic: 3, armor: 7, threatThreshold: 2, perception: 4, initiative: 1, exp: 12, special: "none", tactic: "focusDown"}, //7
+      {name:"Unholy Acolyte", weaponDescriptor: "a glowing mace", vigor: 37, damage: 24, magic: 3, armor: 7, threatThreshold: 5, perception: 14, initiative: 14, exp: 15, special: "none", tactic: "focusDown"}, //8
+      {name:"Clockwork Guardian", weaponDescriptor: "a greataxe", vigor: 42, damage: 17, magic: 3, armor: 10, threatThreshold: 4, perception: 2, initiative: 2, exp: 10, special: "cleave", tactic: "focusDown"}, //9
+      {name:"Steel Sentinel", weaponDescriptor: "a keen halberd", vigor: 36, damage: 28, magic: 3, armor: 8, threatThreshold: 2, perception: 4, initiative: 4, exp: 10, special: "none", tactic: "focusDown"}, //10
+      {name:"Pact-Bound Abyssal", weaponDescriptor: "a spiked arm", vigor: 85, damage: 30, magic: 3, armor: 12, threatThreshold: 6, perception: 14, initiative: 14, exp: 50, special: "cleave", tactic: "focusDown"}, //11
     ];
     /*
-    ["Unholy Acolyte", "a glowing mace", 24, 15, 4, 5, 2, 5, 3],
-    ["Clockwork Guardian", "a greataxe", 42, 11, 3, 8, 3, 0, 0],
-    ["Steel Sentinel", "a halberd", 36, 16, 3, 8, 1, 0, 0],
-    ["Pact-bound Abyssal", "a spiked arm", 22, 16, 3, 3, 4, 6, 6]
+    ["", "", 42, 11, 3, 8, 3, 0, 0],
+    ["", "", 36, 16, 3, 8, 1, 0, 0],
+    ["", "", 22, 16, 3, 3, 4, 6, 6]
     */
     //out of place pirate
 
@@ -793,6 +796,10 @@ class Enemy extends Creature {
         possibleCreatureIndicies = [0,2,3]; //ghoul, warg, Failing G.
       } else if (levelIndexIn === 2){
         possibleCreatureIndicies = [1,3,4]; //Rusted S, failing G, skeleton
+      } else if (levelIndexIn === 3){
+        possibleCreatureIndicies = [4,5]; //skeleton, Adventurer
+      } else if (levelIndexIn === 4){
+        possibleCreatureIndicies = [9,10]; //Clockwork,steel,
       }
     } else { //It's an F.O.E.! Kinda
     if (levelIndexIn === 0) {
@@ -801,6 +808,10 @@ class Enemy extends Creature {
       possibleCreatureIndicies = [6]; //Owlbear
     } else if (levelIndexIn === 2){
       possibleCreatureIndicies = [7]; //Brass S
+    } else if (levelIndexIn === 3){
+      possibleCreatureIndicies = [8]; //Unholy
+    } else if (levelIndexIn === 4){
+      possibleCreatureIndicies = [11]; //pact-bound
     }
   }
 
@@ -912,15 +923,19 @@ class Battlefield {
     let currentFloor = this.commLink.getFloorLevel();
     let challengeFoeChance = 0.2;
     let challengeFoeBool = false;
-    let numberOfFoes = 2;
+    let numberOfFoes = Math.floor(Math.random()*3)+2; //2-4
 
-    if(currentFloor >= 3) {
-      numberOfFoes = Math.floor(Math.random()*3)+2;
-    } else if (currentFloor >= 1){
-      numberOfFoes = Math.floor(Math.random()*2)+2;
-    } else if (this.playerCharacterList.length === 1) {
+    if(currentFloor === 4) {
+      challengeFoeChance = 0.1; //Its the big bad
+    } else if (currentFloor === 3) {
+      numberOfFoes = Math.floor(Math.random()*2)+3; //3-4
+    } else if (currentFloor === 1) {
+      numberOfFoes = Math.floor(Math.random()*2)+2; //2-3
+    } else if (this.playerCharacterList.length === 1) { //only 1 adventurer
       challengeFoeChance = 0;
       numberOfFoes = 1;
+    } else if (currentFloor === 0) {
+      numberOfFoes = Math.floor(Math.random()*2)+1; //1-2
     }
 
     if (Math.random() < challengeFoeChance) {
@@ -1155,9 +1170,21 @@ class Battlefield {
       let targetChoiceIndex = validTargets[Math.floor(Math.random()*validTargets.length)];
       let selectedTarget = this.playerCharacterList[targetChoiceIndex]
       let $combatButton = $("<button>").addClass("combatButton");
-      addToCombatLog(`${whosTurn.name} is planning to threaten ${selectedTarget.name} with ${whosTurn.weapon}`);
+      if(whosTurn.specialAbility === "cleave") {
+        if(whosTurn.threatenedFoes.length > 0) {
+          addToCombatLog(`${whosTurn.name} is planning to attack all it threatens!`);
+          $(`#initEntry${whosTurn.battlefieldId}`).text(`Cleave: All Threats`);
+        } else {
+          addToCombatLog(`${whosTurn.name} is planning to threaten ${selectedTarget.name} with ${whosTurn.weapon}`);
+          $(`#initEntry${whosTurn.battlefieldId}`).text(`Threaten: ${selectedTarget.name}`);
+        }
+      } else {
+        addToCombatLog(`${whosTurn.name} is planning to threaten ${selectedTarget.name} with ${whosTurn.weapon}`);
+        $(`#initEntry${whosTurn.battlefieldId}`).text(`Threaten: ${selectedTarget.name}`);
+      }
+
       //Update the initiative order information
-      $(`#initEntry${whosTurn.battlefieldId}`).text(`Threaten: ${selectedTarget.name}`);
+
       $combatButton.text(`Initiative ${whosTurn.initRoll}: ${whosTurn.name} - threaten ${selectedTarget.name}`);
       $combatButton.attr("id",`combatButton${whosTurn.battlefieldId}`);
       $combatButton.on("click", function() {

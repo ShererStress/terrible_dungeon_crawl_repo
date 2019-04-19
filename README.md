@@ -30,8 +30,10 @@ At the end of a fight, the adventurers may gain some stat increases.
 
 
 Unsolved Problems:
-The responsiveness is still pretty bad. The game was designed for a desktop/laptop sized browser window, and took full advantage of the space available. Trying to compress it onto a mobile screen resulted in small text sizes, add positioning, and a need for horizontal scrolling and zooming.
+The responsiveness is still pretty bad. The game was designed for a desktop/laptop sized browser window, and took full advantage of the space available. Trying to compress it onto a mobile screen resulted in small text sizes, add positioning, and a need for horizontal scrolling and zooming. That said, I would rather put effort into making the game itself better with support for a single device than making a worse game responsive. (personal opinion, but that's no surprise given how much worse my css is compared to my js)
 
 There are a handful of improvements to the game to make it more user-friendly (a tutorial, some status text on the map screen, more info on what the stats do in game).
 
 On the code-side of things, I could use more comments in a lot of areas (CSS especially). Some of the word choice is inconsistent (Player character vs adventurer, enemy vs foe). Improving the stat-blocks in the combat overlay also would have been nice.
+
+The biggest issue would be how some of the one-off class interactions work. A lot of these would need to be redone if the functionality was to be expanded. Ultimately, I'm not sure on the best way to have to classes communicate in js. Are getters/setters ideal? Is directly changing the parameters of another class acceptable? Everything here works (and many of the features are scalable - if it wasn't for the size of the window I could add more adventurers/foes to each side). How does one get around the scope issues that the jQuery onLoad function causes? 

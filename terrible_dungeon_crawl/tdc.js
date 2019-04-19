@@ -140,19 +140,6 @@ $(()=>{ //Start jQuery
   //sU/sD - Stairs up/down. Values are the row and column of where to end up on the floor the stairs lead to.
   //t - return to town. This should (eventually) bring up the town modal/menu
 
-  let mapPrototype5 = [
-    [1,1,1,1,1,1,0,0,1,0],
-    [0,0,1,0,1,0,1,1,1,0],
-    [0,1,1,1,1,1,1,0,1,1],
-    [0,1,1,0,1,0,1,1,0,1],
-    [0,1,0,1,1,0,0,1,0,1],
-    [1,1,1,1,1,1,0,0,1,1],
-    [0,0,1,0,0,0,0,0,1,0],
-    [0,1,1,1,1,1,1,0,1,1],
-    [1,1,1,1,0,0,1,1,0,1],
-    [0,1,1,1,1,1,1,1,1,1]
-  ];
-
   let floorOne = [
     ["1_t_0",1,1,1,1],
     [0,0,1,0,1],
@@ -176,7 +163,7 @@ $(()=>{ //Start jQuery
 
   let floorThree = [
     [1,1,1,1,1,1,0,0,0,0],
-    [1,0,"1_sD_0.1",0,0,1,0,1,1,1],
+    [1,0,"1_sD_0.1",0,0,1,0,"1_sU_0.9",1,1],
     [1,0,0,0,1,1,0,0,0,1],
     [1,0,1,0,1,0,1,1,0,1],
     [1,1,1,1,1,0,1,1,1,1],
@@ -188,10 +175,37 @@ $(()=>{ //Start jQuery
   ];
   //Down1 1.2
   //Down2 7.0
+  //up1 1.7
 
-//Max size of 15x15 - fits on tablet - only 2 sizes needed for responsiveness
+  let floorFour = [
+    [1,1,0,0,0,1,1,0,1,"1_sD_1.7"],
+    [1,1,1,1,1,1,1,0,1,1],
+    [1,0,1,1,0,0,1,0,0,1],
+    [1,0,0,0,0,1,1,1,1,1],
+    [1,1,1,"1_sU_4.3",0,1,1,0,1,1],
+    [1,1,0,0,0,1,0,0,0,0],
+    [0,1,0,0,0,1,0,1,1,0],
+    [0,1,1,0,1,1,1,1,1,0],
+    [0,1,1,1,1,1,0,0,1,1],
+    [0,0,0,0,0,0,0,0,1,1]
+  ];
+  //Down 0.9
+  //Up 4.3
 
+  let floorFive = [
+    [1,1,1,1,1,1,1,1,1],
+    [1,0,0,0,1,0,0,0,1],
+    [1,0,1,1,1,1,1,0,1],
+    [1,0,1,0,0,0,0,1,0],
+    [1,0,1,"1_sD_4.3",0,"1_t_0",1,1,1],
+    [1,0,1,0,0,0,0,0,1],
+    [1,0,1,0,1,1,1,0,1],
+    [1,1,1,1,1,0,1,0,1],
+    [0,1,0,0,0,0,1,1,1],
+  ];
 
+  //Town 4.5
+  //Down 4.3
   //////CLASSES
 
   //Data and methods for a single floor
@@ -200,7 +214,7 @@ $(()=>{ //Start jQuery
 
     //List of premadeFloors
     static floorLayouts() {
-      return [floorOne, floorTwo, floorThree];
+      return [floorOne, floorTwo, floorThree, floorFour, floorFive];
     };
 
 
@@ -849,6 +863,8 @@ $(()=>{ //Start jQuery
     theSpire.assembleNewFloor(FloorData.floorLayouts()[0]);
     theSpire.assembleNewFloor(FloorData.floorLayouts()[1]);
     theSpire.assembleNewFloor(FloorData.floorLayouts()[2]);
+    theSpire.assembleNewFloor(FloorData.floorLayouts()[3]);
+    theSpire.assembleNewFloor(FloorData.floorLayouts()[4]);
 
     //theSpire.listFloors();
 
